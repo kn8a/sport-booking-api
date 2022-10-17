@@ -30,12 +30,24 @@ const userSchema = mongoose.Schema(
       notes: {
         type: String,
         default: "",
+        timestamps: true
       },
       balance: {
         type: Number,
         default: 0,
       },
-      
+      role: {
+        type: String,
+        required: true,
+        default: "user",
+        enum: ["user", "admin", "dev", "manager"],
+      },
+      status: {
+        type: String,
+        required: true,
+        default: "pending",
+        enum: ["pending", "approved", "suspended", "denied",],
+      },
     },
     {
       timestamps: true,
