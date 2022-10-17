@@ -24,6 +24,7 @@ const bookingSchema = mongoose.Schema(
             enum: ["pending", "confirmed", "cancelled"]
         },
         notes: [{type: String}],
+        amount: {type: Number},
         payment: {
             type: mongoose.Schema.Types.ObjectId, ref: "Payment"
         }

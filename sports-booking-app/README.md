@@ -31,3 +31,7 @@ Give a ⭐️ if this project helped you!
 ***
 Collections: users, bookings
 users: admin, user
+
+before 6 - 100
+after 6 - 200
+530-630 - 200
