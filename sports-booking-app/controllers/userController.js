@@ -2,6 +2,7 @@ const User = require("../models/userModel")
 const asyncHandler = require("express-async-handler")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
+const { use } = require("../routes/users")
 
 //*create user with balance 0 and status pending
 const userRegister = asyncHandler(async (req,res) => { 
@@ -14,6 +15,11 @@ const userRegister = asyncHandler(async (req,res) => {
 
     if (password != confirm_password) {
         res.status(400).json({ message: `Passwords don't match. Please retry.` })
+        return
+    }
+
+    if (password.length < 8) {
+        res.status(400).json({ message: `Password is too short, must be at least 8 characters` })
         return
     }
 
@@ -44,3 +50,52 @@ const userRegister = asyncHandler(async (req,res) => {
     }
 })
 
+//* user login
+const userLogin = asyncHandler(async (req,res) => {
+    const { email, password } = req.body
+
+    if (!email || !password) {
+        res.status(400).json({ message: "Please enter email and password" })
+        return
+    }
+
+    const user = await User.findOne({ email })
+    
+    if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status == 'approved') {
+        res.json({
+          id: user.id,
+          name_first: user.name_first,
+          name_last: user.name_last,
+          token: genToken(user.id),
+          profile_pic: user.profile_pic,
+        })
+        return
+      } else if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status != 'pending') {
+        res.status(200).json({ message: "Your account is pending, please await admin approval." })
+        return
+      } else if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status != 'suspended') {
+        res.status(400).json({ message: "Your account has been suspended, please contact admin." })
+        return
+      } else {
+        res.status(400).json({ message: "Invalid credential" })
+        return
+      }
+})
+
+//* update user profile
+const userUpdate = asyncHandler(async (req, res) => {
+    const user = await User.findByIdAndUpdate(req.user._id, req.body, {
+      new: true,
+    })
+    res.status(200).json({ message: "User updated" })
+  })
+  
+  module.exports = {
+    userRegister,
+//    getMe,
+//    getAllUsers,
+    userLogin,
+    userUpdate,
+//    getUser,
+//    uploadProfilePic,
+  }
