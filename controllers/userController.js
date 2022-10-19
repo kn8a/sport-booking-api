@@ -6,6 +6,9 @@ const { use } = require("../routes/users")
 
 //*create user with balance 0 and status pending
 const userRegister = asyncHandler(async (req,res) => { 
+
+    console.log('reg function hit')
+    console.log(req.body)
     const {name_first, name_last, email, password, confirm_password, address} = req.body
 
     if (!name_first || !name_last || !email || !password || !confirm_password || !address) {
@@ -45,8 +48,10 @@ const userRegister = asyncHandler(async (req,res) => {
 
     if (newUser) {
         res.status(200).json({ message: "Profile created successfully" })
+        
     } else {
         res.status(400).json({ message: "Failed to register, please retry." })
+        
     }
 })
 
@@ -60,20 +65,21 @@ const userLogin = asyncHandler(async (req,res) => {
     }
 
     const user = await User.findOne({ email })
+    console.log(user)
     
     if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status == 'approved') {
-        res.json({
+        res.status(200).json({
           id: user.id,
           name_first: user.name_first,
           name_last: user.name_last,
           token: genToken(user.id),
-          profile_pic: user.profile_pic,
+          // profile_pic: user.profile_pic,
         })
         return
-      } else if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status != 'pending') {
-        res.status(200).json({ message: "Your account is pending, please await admin approval." })
+      } else if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status == 'pending') {
+        res.status(400).json({ message: "Your account is pending, please await admin approval." })
         return
-      } else if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status != 'suspended') {
+      } else if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status == 'suspended') {
         res.status(400).json({ message: "Your account has been suspended, please contact admin." })
         return
       } else {
