@@ -4,6 +4,12 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const { use } = require("../routes/users")
 
+
+//jwt token generator
+const genToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" })
+}
+
 //*create user with balance 0 and status pending
 const userRegister = asyncHandler(async (req,res) => { 
 

@@ -6,6 +6,12 @@ const bookingSchema = mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
         },
+        date: { 
+            year: {type: Number},
+            month: {type: Number},
+            day: {type: Number},
+            date: {type: Date}
+        },
         slot: {
             start: {
                 Date
