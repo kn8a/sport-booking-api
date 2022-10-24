@@ -25,20 +25,34 @@ const checkAvailability = asyncHandler(async(req,res) => {
     }
     
     //get booking for date - add Select only slots
-    const existingBookings = await Booking.find({year:date.year, month:date.month, day:date.day})
+    const existingBookings = await Booking.find({year:date.year, month:date.month, day:date.day}).select({slots:1}).populate('slots')
     console.log(existingBookings)
+    let bookedSlots=[]
+    if (existingBookings) {
+        for (let i=0; i<existingBookings.length; i++) {
+            bookedSlots.push(...existingBookings[i].slots)
+        }
+    }
+    console.log(bookedSlots)
 
     const buildTimes = () => {
         let slots= []
+        
         for (let i=7; i<22; i++) {
+
+            let booked = false
+            if (bookedSlots.indexOf(i) != -1) {
+                booked = true
+            }
+            
             let price
             if (i<18) {
                 price = 50
             } else {
                 price = 100
             }
-          slots.push({time: `${i}:00`, value: i, price: price, booked: false})
-          slots.push({time: `${i}:30`, value: i+0.5, price: price, booked: false})
+          slots.push({time: `${i}:00`, value: i, price: price, booked: booked})
+          slots.push({time: `${i}:30`, value: i+0.5, price: price, booked: booked})
         }
         return slots
       }
@@ -47,6 +61,32 @@ const checkAvailability = asyncHandler(async(req,res) => {
     res.status(200).json({times: times})
 })
 
+const newBooking = asyncHandler(async(req,res) => {
+    console.log(req.body)
+    const date= {
+        year: Number(req.body.date.slice(0,4)),
+        month: Number(req.body.date.slice(5,7)),
+        day: Number(req.body.date.slice(8))
+    }
+    console.log(date)
+    const totalAmount = req.body.slots.reduce((total, slot) => {
+        return total + slot.price
+    },0)
+    console.log(totalAmount)
+    const newBooking = await Booking.create({
+        user: req.user._id,
+        year: date.year,
+        month: date.month,
+        day: date.day,
+        amount: totalAmount,
+        slots: req.body.slots.map(slot => {return slot.value}),
+        status: 'confirmed'
+    })
+    console.log(newBooking)
+
+
+})
+
 module.exports = {
-    checkAvailability
+    checkAvailability, newBooking
   }
