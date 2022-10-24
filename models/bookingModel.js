@@ -6,23 +6,13 @@ const bookingSchema = mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
         },
-        date: { 
-            year: {type: Number},
-            month: {type: Number},
-            day: {type: Number},
-            date: {type: Date}
-        },
-        slot: {
-            start: {
-                Date
-            },
-            end: {
-                Date
-            },
-            total: {
-                Number
-            }
-        },
+        
+        year: {type: Number},
+        month: {type: Number},
+        day: {type: Number},
+        date: {type: Date},
+        
+        slots: [],
         status: {
             type: String,
             required: true,
@@ -31,9 +21,9 @@ const bookingSchema = mongoose.Schema(
         },
         notes: [{type: String}],
         amount: {type: Number},
-        payment: {
-            type: mongoose.Schema.Types.ObjectId, ref: "Payment"
-        }
+        // payment: {
+        //     type: mongoose.Schema.Types.ObjectId, ref: "Payment"
+        // }
     },
     {
         timestamps: true,
