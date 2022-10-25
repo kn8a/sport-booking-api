@@ -1,24 +1,64 @@
 const Booking = require("../models/bookingModel")
+const User = require("../models/userModel")
 const asyncHandler = require("express-async-handler")
 
-function buildTimes(bookedSlots) {
-    let slots= []
+// function buildTimes(bookedSlots) {
+//     let slots= []
     
+//     for (let i=7; i<22; i++) {
+
+//         let booked = false
+//         if (bookedSlots.indexOf(i) != -1) {
+//             booked = true
+//         }
+        
+//         let price
+//         if (i<18) {
+//             price = 50
+//         } else {
+//             price = 100
+//         }
+        
+//       slots.push({time: `${i}:00`, value: i, price: price, booked: booked})
+        
+//       booked = false
+//       if (bookedSlots.indexOf(i) != -1) {
+//         booked = true
+//         }
+
+//       slots.push({time: `${i}:30`, value: i+0.5, price: price, booked: booked})
+//     }
+//     return slots
+//   }
+
+  function buildTimes(bookedSlots) {
+    let slots= []
+    let hour = 7
     for (let i=7; i<22; i++) {
+        console.log(i, hour)
 
         let booked = false
-        if (bookedSlots.indexOf(i) != -1) {
+        if (bookedSlots.indexOf(hour) != -1) {
             booked = true
         }
         
         let price
-        if (i<18) {
+        if (hour<18) {
             price = 50
         } else {
             price = 100
         }
-      slots.push({time: `${i}:00`, value: i, price: price, booked: booked})
-      slots.push({time: `${i}:30`, value: i+0.5, price: price, booked: booked})
+        
+      slots.push({time: `${hour}:00`, value: hour, price: price, booked: booked})
+      hour = hour+0.5
+        
+      booked = false
+      if (bookedSlots.indexOf(hour) != -1) {
+        booked = true
+        }
+
+      slots.push({time: `${i}:30`, value: hour, price: price, booked: booked})
+      hour= hour + 0.5
     }
     return slots
   }
@@ -76,7 +116,21 @@ const checkAvailability = asyncHandler(async(req,res) => {
 //*New booking
 const newBooking = asyncHandler(async(req,res) => {
 
-    console.log(req.body)
+    //check for minimum 2 slots
+    if (req.body.slots.length<2) {
+        res.status(400).json({message: "Please select at least 2 consecutive slots and retry."})
+        return
+    }
+
+    //check whether slots are consecutive
+    for (let i=1; i<req.body.slots.length; i++) {
+        if (req.body.slots[i].value - req.body.slots[i-1].value != 0.5) {
+            res.status(400).json({message: "A booking must have consecutive time slots. If you need to book non consecutive times, you may do so in a separate booking"})
+            return
+        }
+    }
+
+
     const date= dateSlicer(req.body.date)
     if (futureDateChecker(date)) {
         res.status(400).json({message: "You cannot book in the past. Please select a future date"})
@@ -93,14 +147,16 @@ const newBooking = asyncHandler(async(req,res) => {
         }
     }
     
-    console.log(bookedSlots)
-
+    //calculate price for the booking
     let total=0
-
     for (let i=0; i<req.body.slots.length; i++) {
         console.log(bookedSlots.indexOf(req.body.slots[i].value))
         if (bookedSlots.indexOf(req.body.slots[i].value) != -1) {
-            res.status(400).json({message: "One of more of the time slots you are trying to book has already been booked. Please retry with a different time."})
+            res.status(400).json({
+                message: 
+                `One of more of the time slots you are trying to book has already been booked. 
+                Please retry with a different time.`
+            })
             total = 0
             console.log('already booked')
             return
@@ -110,28 +166,33 @@ const newBooking = asyncHandler(async(req,res) => {
             total=total+100
         }
     }
-    
-    console.log(total)
 
-    
-
-
-
-
-    const totalAmount = req.body.slots.reduce((total, slot) => {
-        return total + slot.price
-    },0)
-    console.log(totalAmount)
+    const user = await User.findById(req.user._id)
+    const newBalance = user.balance - total
+    if (total>user.balance) {
+        res.status(400).json({message: "Insufficient balance, please top-up and try again."})
+        return
+    }
+    const userBalanceUpdate = await user.update({balance: user.balance-total})
+    //console.log(userBalanceUpdate)
+    if (!userBalanceUpdate) {
+        res.status(400).json({message: "Database error. Please notify admin."})
+        return
+    }
+    //create booking entry
     const newBooking = await Booking.create({
         user: req.user._id,
         year: date.year,
         month: date.month,
         day: date.day,
-        amount: totalAmount,
+        amount: total,
         slots: req.body.slots.map(slot => {return slot.value}),
         status: 'confirmed'
     })
     console.log(newBooking)
+
+
+
 })
 
 
