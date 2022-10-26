@@ -1,44 +1,22 @@
 const Booking = require("../models/bookingModel")
 const User = require("../models/userModel")
 const asyncHandler = require("express-async-handler")
+const axios = require("axios");
 
-// function buildTimes(bookedSlots) {
-//     let slots= []
-    
-//     for (let i=7; i<22; i++) {
 
-//         let booked = false
-//         if (bookedSlots.indexOf(i) != -1) {
-//             booked = true
-//         }
-        
-//         let price
-//         if (i<18) {
-//             price = 50
-//         } else {
-//             price = 100
-//         }
-        
-//       slots.push({time: `${i}:00`, value: i, price: price, booked: booked})
-        
-//       booked = false
-//       if (bookedSlots.indexOf(i) != -1) {
-//         booked = true
-//         }
-
-//       slots.push({time: `${i}:30`, value: i+0.5, price: price, booked: booked})
-//     }
-//     return slots
-//   }
-
-  function buildTimes(bookedSlots) {
+  function buildTimes(bookedSlots,localTime, date) {
+    console.log(date)
     let slots= []
     let hour = 7
     for (let i=7; i<22; i++) {
-        console.log(i, hour)
-
+        //console.log(i, hour)
+        
         let booked = false
-        if (bookedSlots.indexOf(hour) != -1) {
+        if ((bookedSlots.indexOf(hour) != -1) || (
+            localTime.year == date.year && 
+            localTime.month == date.month &&
+            localTime.day == date.day &&
+            hour<=localTime.hour+0.5)) {
             booked = true
         }
         
@@ -53,7 +31,11 @@ const asyncHandler = require("express-async-handler")
       hour = hour+0.5
         
       booked = false
-      if (bookedSlots.indexOf(hour) != -1) {
+      if ((bookedSlots.indexOf(hour) != -1) || (
+        localTime.year == date.year && 
+        localTime.month == date.month &&
+        localTime.day == date.day &&
+        hour<=localTime.hour+0.5)){
         booked = true
         }
 
@@ -71,44 +53,62 @@ const asyncHandler = require("express-async-handler")
     })
   }
 
-  function futureDateChecker(reqDate) {
-    let currentDate = new Date();
-    let cDay = currentDate.getDate();
-    let cMonth = currentDate.getMonth() + 1;
-    let cYear = currentDate.getFullYear();
+  function futureDateChecker(reqDate,localTime) {
+    // let currentDate = new Date();
+    // let cDay = currentDate.getDate();
+    // let cMonth = currentDate.getMonth() + 1;
+    // let cYear = currentDate.getFullYear();
     if (
-        (cYear == reqDate.year && cMonth == reqDate.month && cDay > reqDate.day) ||
-        (cYear == reqDate.year && cMonth > reqDate.month) ||
-        (cYear > reqDate.year)
+        (localTime.year == reqDate.year && localTime.month == reqDate.month && localTime.day > reqDate.day) ||
+        (localTime.year == reqDate.year && localTime.month > reqDate.month) ||
+        (localTime.year > reqDate.year)
     ) {
         return true
     }
   }
 
+  function getBkkTime() {
+    axios.get('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
+  }
 
 
 //*check availability
 const checkAvailability = asyncHandler(async(req,res) => {
     
+    //getBkkTime()
+
+    const localTime = await axios.get('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
+    .then(response => {
+        return response.data
+    })
+    
+    console.log(localTime)
+
+    // const timeData = await fetch('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
+    // const bkkDate = await timeData.json 
+    // console.log(bkkDate)
+    
     const date= dateSlicer(req.params.date)
-    if (futureDateChecker(date)) {
+
+    if (futureDateChecker(date,localTime)) {
         res.status(400).json({message: "You cannot book in the past. Please select a future date"})
         return
     }
     
+
     
     //*get booking for date - add Select only slots
     const existingBookings = await Booking.find({year:date.year, month:date.month, day:date.day}).select({slots:1})
-    console.log(existingBookings)
+    //console.log(existingBookings)
     let bookedSlots=[]
     if (existingBookings) {
         for (let i=0; i<existingBookings.length; i++) {
             bookedSlots.push(...existingBookings[i].slots)
         }
     }
-    console.log(bookedSlots)
+    //console.log(bookedSlots)
 
-    const times = buildTimes(bookedSlots)
+    const times = buildTimes(bookedSlots, localTime, date)
     //console.log(times)
     res.status(200).json({times: times})
 })
@@ -150,7 +150,7 @@ const newBooking = asyncHandler(async(req,res) => {
     //calculate price for the booking
     let total=0
     for (let i=0; i<req.body.slots.length; i++) {
-        console.log(bookedSlots.indexOf(req.body.slots[i].value))
+        //console.log(bookedSlots.indexOf(req.body.slots[i].value))
         if (bookedSlots.indexOf(req.body.slots[i].value) != -1) {
             res.status(400).json({
                 message: 

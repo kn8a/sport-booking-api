@@ -2,6 +2,7 @@ var express = require('express');
 const { route } = require(".")
 var router = express.Router();
 const { protect } = require("../middleware/authMiddleware")
+const { curDate } = require("../middleware/curDateTime")
 
 const {
     checkAvailability, newBooking
