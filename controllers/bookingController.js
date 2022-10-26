@@ -190,6 +190,7 @@ const newBooking = asyncHandler(async(req,res) => {
         status: 'confirmed'
     })
     console.log(newBooking)
+    res.status(200).json({message: 'Booking confirmed', remainingBalance: newBalance})
 
 
 
