@@ -6,9 +6,10 @@ const { curDate } = require("../middleware/curDateTime")
 
 const {
     checkAvailability, newBooking
-  } = require("../controllers/bookingController")
+  } = require("../controllers/bookingController");
+const { isAdmin } = require('../middleware/isAdminMiddleware');
 
 router.get("/check/:date", checkAvailability)
-router.post("/", protect, newBooking)
+router.post("/", protect, isAdmin, newBooking)
 
 module.exports = router;

@@ -116,6 +116,8 @@ const checkAvailability = asyncHandler(async(req,res) => {
 //*New booking
 const newBooking = asyncHandler(async(req,res) => {
 
+
+
     //check for minimum 2 slots
     if (req.body.slots.length<2) {
         res.status(400).json({message: "Please select at least 2 consecutive slots and retry."})
@@ -130,9 +132,16 @@ const newBooking = asyncHandler(async(req,res) => {
         }
     }
 
+    const localTime = await axios.get('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
+    .then(response => {
+        return response.data
+    })
+    
+    console.log(localTime)
 
     const date= dateSlicer(req.body.date)
-    if (futureDateChecker(date)) {
+    console.log(date)
+    if (futureDateChecker(date,localTime)) {
         res.status(400).json({message: "You cannot book in the past. Please select a future date"})
         return
     }

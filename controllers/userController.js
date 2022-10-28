@@ -3,6 +3,10 @@ const asyncHandler = require("express-async-handler")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const { use } = require("../routes/users")
+//const nodemailer = require("nodemailer");
+const sendMailMethod = require("../send-mail")
+
+
 
 
 //jwt token generator
@@ -55,6 +59,7 @@ const userRegister = asyncHandler(async (req,res) => {
     if (newUser) {
         res.status(200).json({ message: "Profile created successfully" })
         
+        
     } else {
         res.status(400).json({ message: "Failed to register, please retry." })
         
@@ -82,6 +87,12 @@ const userLogin = asyncHandler(async (req,res) => {
           balance: user.balance
           // profile_pic: user.profile_pic,
         })
+        try {
+            const result = await sendMailMethod({from: "contact@kn8dev.com", to:['admin@kn8dev.com'], subject: 'test', text:'test email'})
+            console.log(result)
+        } catch (error) {
+          console.error(error.message);
+        }
         return
       } else if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status == 'pending') {
         res.status(400).json({ message: "Your account is pending, please await admin approval." })
