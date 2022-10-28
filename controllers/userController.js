@@ -87,12 +87,13 @@ const userLogin = asyncHandler(async (req,res) => {
           balance: user.balance
           // profile_pic: user.profile_pic,
         })
-        try {
-            const result = await sendMailMethod({from: "contact@kn8dev.com", to:['admin@kn8dev.com'], subject: 'test', text:'test email'})
-            console.log(result)
-        } catch (error) {
-          console.error(error.message);
-        }
+        //SEND EMAIL
+        // try {
+        //     const result = await sendMailMethod({from: "contact@kn8dev.com", to:['admin@kn8dev.com'], subject: 'test', text:'test email'})
+        //     console.log(result)
+        // } catch (error) {
+        //   console.error(error.message);
+        // }
         return
       } else if (user && (await bcrypt.compare(req.body.password, user.password)) && user.status == 'pending') {
         res.status(400).json({ message: "Your account is pending, please await admin approval." })

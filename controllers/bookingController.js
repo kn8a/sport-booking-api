@@ -178,6 +178,7 @@ const newBooking = asyncHandler(async(req,res) => {
 
     const user = await User.findById(req.user._id)
     const newBalance = user.balance - total
+    console.log(user.balance, total)
     if (total>user.balance) {
         res.status(400).json({message: "Insufficient balance, please top-up and try again."})
         return
@@ -196,7 +197,9 @@ const newBooking = asyncHandler(async(req,res) => {
         day: date.day,
         amount: total,
         slots: req.body.slots.map(slot => {return slot.value}),
-        status: 'confirmed'
+        status: 'confirmed',
+        //20221027.5
+        date: `${date.year}${date.month}${date.day}`
     })
     console.log(newBooking)
     res.status(200).json({message: 'Booking confirmed', remainingBalance: newBalance})
@@ -206,7 +209,27 @@ const newBooking = asyncHandler(async(req,res) => {
 })
 
 
+//*Get my booking
+const getUpcomingBookings = asyncHandler(async(req,res) => {
+
+    const localTime = await axios.get('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
+    .then(response => {
+        return response.data
+    })
+    
+    const upcoming = await Booking.find({user: req.user._id, date:{$gte: `${localTime.year}${localTime.month}${localTime.day}`}})
+    console.log(upcoming)
+    res.status(200).json({upcoming: upcoming})
+})
+
 
 module.exports = {
-    checkAvailability, newBooking
+    checkAvailability, newBooking, getUpcomingBookings
   }
+
+
+//   if (
+//     (localTime.year == reqDate.year && localTime.month == reqDate.month && localTime.day > reqDate.day) ||
+//     (localTime.year == reqDate.year && localTime.month > reqDate.month) ||
+//     (localTime.year > reqDate.year)
+// )

@@ -10,7 +10,7 @@ const bookingSchema = mongoose.Schema(
         year: {type: Number},
         month: {type: Number},
         day: {type: Number},
-        date: {type: Date},
+        date: {type: Number},
         
         slots: [],
         status: {
