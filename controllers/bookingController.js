@@ -5,7 +5,7 @@ const axios = require("axios");
 
 
   function buildTimes(bookedSlots,localTime, date) {
-    console.log(date)
+    // console.log(date)
     let slots= []
     let hour = 7
     for (let i=7; i<22; i++) {
@@ -91,10 +91,10 @@ const checkAvailability = asyncHandler(async(req,res) => {
     const date= dateSlicer(req.params.date)
 
     
-    const bookDate = new Date(req.params.date)
-    console.log(bookDate)
-    const unixDate = Math.floor(bookDate.getTime()/1000)
-    console.log(unixDate)
+    // const bookDate = new Date(req.params.date)
+    // console.log(bookDate)
+    // const unixDate = Math.floor(bookDate.getTime()/1000)
+    // console.log(unixDate)
 
     if (futureDateChecker(date,localTime)) {
         res.status(400).json({message: "You cannot book in the past. Please select a future date"})
@@ -145,8 +145,10 @@ const newBooking = asyncHandler(async(req,res) => {
     
     console.log(localTime)
 
+    
+
     const date= dateSlicer(req.body.date)
-    console.log(date)
+    //console.log(date)
     if (futureDateChecker(date,localTime)) {
         res.status(400).json({message: "You cannot book in the past. Please select a future date"})
         return
@@ -184,11 +186,29 @@ const newBooking = asyncHandler(async(req,res) => {
 
     const user = await User.findById(req.user._id)
     const newBalance = user.balance - total
-    console.log(user.balance, total)
+    //console.log(user.balance, total)
     if (total>user.balance) {
         res.status(400).json({message: "Insufficient balance, please top-up and try again."})
         return
     }
+
+    //^date contructor
+    //console.log(typeof(req.body.slots[0].value))
+    let hour = 0
+    let minute = 0
+    if (Math.trunc(req.body.slots[0].value) < req.body.slots[0].value) {
+        hour = Math.trunc(req.body.slots[0].value)
+        minute = 30
+    } else {
+        hour = req.body.slots[0].value
+        minute = 0
+    }
+
+    const bookDate = new Date(date.year, date.month, date.day, hour, minute)
+    console.log(bookDate)
+    const unixDate = Math.floor(bookDate.getTime()/1000)
+    console.log(unixDate)
+
     const userBalanceUpdate = await user.update({balance: user.balance-total})
     //console.log(userBalanceUpdate)
     if (!userBalanceUpdate) {
@@ -203,11 +223,12 @@ const newBooking = asyncHandler(async(req,res) => {
         day: date.day,
         amount: total,
         slots: req.body.slots.map(slot => {return slot.value}),
+        slots_full: req.body.slots,
         status: 'confirmed',
         //20221027.5
-        date: `${date.year}${date.month}${date.day}`
+        date: unixDate
     })
-    console.log(newBooking)
+    //console.log(newBooking)
     res.status(200).json({message: 'Booking confirmed', remainingBalance: newBalance})
 
 
@@ -222,8 +243,11 @@ const getUpcomingBookings = asyncHandler(async(req,res) => {
     .then(response => {
         return response.data
     })
+
+    const requestTime = new Date(localTime.year, localTime.month, localTime.day, localTime.hour, localTime.minute)
+    const unixDate = Math.floor(requestTime.getTime()/1000)
     
-    const upcoming = await Booking.find({user: req.user._id, date:{$gte: `${localTime.year}${localTime.month}${localTime.day}`}})
+    const upcoming = await Booking.find({user: req.user._id, date:{$gte: `${unixDate}`}}).sort({date:1})
     console.log(upcoming)
     res.status(200).json({upcoming: upcoming})
 })

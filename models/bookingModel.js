@@ -13,6 +13,7 @@ const bookingSchema = mongoose.Schema(
         date: {type: Number},
         
         slots: [],
+        slots_full: [],
         status: {
             type: String,
             required: true,
