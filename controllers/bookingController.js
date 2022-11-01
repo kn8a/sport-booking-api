@@ -90,6 +90,12 @@ const checkAvailability = asyncHandler(async(req,res) => {
     
     const date= dateSlicer(req.params.date)
 
+    
+    const bookDate = new Date(req.params.date)
+    console.log(bookDate)
+    const unixDate = Math.floor(bookDate.getTime()/1000)
+    console.log(unixDate)
+
     if (futureDateChecker(date,localTime)) {
         res.status(400).json({message: "You cannot book in the past. Please select a future date"})
         return
