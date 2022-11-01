@@ -252,9 +252,25 @@ const getUpcomingBookings = asyncHandler(async(req,res) => {
     res.status(200).json({upcoming: upcoming})
 })
 
+const cancelBooking = asyncHandler(async(req,res) => {
+
+    const localTime = await axios.get('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
+    .then(response => {
+        return response.data
+    })
+
+    const requestTime = new Date(localTime.year, localTime.month, localTime.day, localTime.hour, localTime.minute)
+    const unixDate = Math.floor(requestTime.getTime()/1000)
+    
+    const upcoming = await Booking.find({user: req.user._id, date:{$gte: `${unixDate}`}}).sort({date:1})
+    console.log(upcoming)
+    res.status(200).json({upcoming: upcoming})
+})
+
+
 
 module.exports = {
-    checkAvailability, newBooking, getUpcomingBookings
+    checkAvailability, newBooking, getUpcomingBookings, cancelBooking
   }
 
 
