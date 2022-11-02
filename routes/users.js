@@ -7,7 +7,9 @@ const {
   userRegister,
   userLogin,
   userUpdate,
-} = require("../controllers/userController")
+  getBalance
+} = require("../controllers/userController");
+const { protect } = require('../middleware/authMiddleware');
 
 /* GET users listing. */
 // router.get('/', function(req, res, next) {
@@ -16,5 +18,7 @@ const {
 
 router.post("/register", userRegister)
 router.post("/login", userLogin)
+
+router.get('/balance', protect, getBalance)
 
 module.exports = router;

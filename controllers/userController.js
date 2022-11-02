@@ -114,9 +114,15 @@ const userUpdate = asyncHandler(async (req, res) => {
     })
     res.status(200).json({ message: "User updated" })
   })
+
+const getBalance = asyncHandler(async (req, res) => {
+    const userBal = await User.findById(req.user._id).select({balance:1})
+    res.status(200).json({balance: userBal})
+  })
   
   module.exports = {
     userRegister,
+    getBalance,
 //    getMe,
 //    getAllUsers,
     userLogin,
