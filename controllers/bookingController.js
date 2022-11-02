@@ -3,7 +3,6 @@ const User = require("../models/userModel")
 const asyncHandler = require("express-async-handler")
 const axios = require("axios");
 
-
   function buildTimes(bookedSlots,localTime, date) {
     // console.log(date)
     let slots= []
@@ -104,7 +103,7 @@ const checkAvailability = asyncHandler(async(req,res) => {
 
     
     //*get booking for date - add Select only slots
-    const existingBookings = await Booking.find({year:date.year, month:date.month, day:date.day}).select({slots:1})
+    const existingBookings = await Booking.find({year:date.year, month:date.month, day:date.day, status:{$not: {$eq: 'cancelled'}}}).select({slots:1})
     //console.log(existingBookings)
     let bookedSlots=[]
     if (existingBookings) {
@@ -155,7 +154,7 @@ const newBooking = asyncHandler(async(req,res) => {
     }
 
     //get existing bookings
-    const existingBookings = await Booking.find({year:date.year, month:date.month, day:date.day}).select({slots:1})
+    const existingBookings = await Booking.find({year:date.year, month:date.month, day:date.day, status:{$not: {$eq: 'cancelled'}}}).select({slots:1})
     //console.log(existingBookings)
     let bookedSlots=[]
     if (existingBookings) {
@@ -247,24 +246,69 @@ const getUpcomingBookings = asyncHandler(async(req,res) => {
     const requestTime = new Date(localTime.year, localTime.month, localTime.day, localTime.hour, localTime.minute)
     const unixDate = Math.floor(requestTime.getTime()/1000)
     
-    const upcoming = await Booking.find({user: req.user._id, date:{$gte: `${unixDate}`}}).sort({date:1})
+    const upcoming = await Booking.find({user: req.user._id, date:{$gte: `${unixDate}`}, status: 'confirmed'}).sort({date:1})
     console.log(upcoming)
     res.status(200).json({upcoming: upcoming})
 })
 
 const cancelBooking = asyncHandler(async(req,res) => {
 
+    console.log(req.body)
+
+    //get booking
+    const booking = await Booking.findById(req.body._id)
+    //check if booking is valid
+    if (!booking) {
+        res.status(400).json({message:'No such booking in the database'})
+        return
+    }
+    //check if user is owner of booking
+    if (booking.user.toString() != req.user._id.toString()) {
+        res.status(400).json({message:'You are not authorized to cancel this booking'})
+        return
+    }
+     //check that the booking is confirmed status
+    if (booking.status != 'confirmed') {
+        res.status(400).json({message:`The booking is in ${booking.status} status, and cannot be cancelled.`})
+        return
+    }
+
     const localTime = await axios.get('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
     .then(response => {
         return response.data
     })
 
+    //check that booking is not in the past
     const requestTime = new Date(localTime.year, localTime.month, localTime.day, localTime.hour, localTime.minute)
-    const unixDate = Math.floor(requestTime.getTime()/1000)
-    
-    const upcoming = await Booking.find({user: req.user._id, date:{$gte: `${unixDate}`}}).sort({date:1})
-    console.log(upcoming)
-    res.status(200).json({upcoming: upcoming})
+    const requestUnixDate = Math.floor(requestTime.getTime()/1000)
+
+    let hour = 0
+    let minute = 0
+    if (Math.trunc(booking.slots[0]) < booking[0]) {
+        hour = Math.trunc(booking.slots[0])
+        minute = 30
+    } else {
+        hour = booking.slots[0]
+        minute = 0
+    }
+    const bookingTime = new Date(booking.year, booking.month, booking.day, hour, minute )
+    const bookingUnixTime = Math.floor(bookingTime.getTime()/1000)
+
+    if (bookingUnixTime < requestUnixDate) {
+        res.status(400).json({message:`Cannot cancel a past booking or a booking that already started`})
+        return
+    }
+
+    //change booking status to cancelled
+    const updatedBooking = await booking.update({status: 'cancelled'})
+
+    //update user balance
+    const user = await User.findById(req.user._id)
+    const updatedUser = await user.update({balance: user.balance+booking.amount})
+    console.log(updatedUser)
+
+    //return confirmation with amount of credit and new user balance.
+    res.status(200).json({message: `Booking cancelled. You have been credited ${booking.amount}.`})
 })
 
 
