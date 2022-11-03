@@ -10,6 +10,7 @@ const cors = require("cors")
 var indexRouter = require('./routes/index');
 var usersRouter = require("./routes/users")
 var bookingsRouter = require("./routes/bookings")
+var adminRouter = require("./routes/admin")
 
 connectDb()
 
@@ -29,6 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use("/api/users", usersRouter)
 app.use("/api/bookings/", bookingsRouter)
+app.use("/api/admin/", adminRouter)
 
 app.use("/api/users/register", usersRouter)
 // catch 404 and forward to error handler

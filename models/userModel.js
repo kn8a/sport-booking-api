@@ -23,15 +23,7 @@ const userSchema = mongoose.Schema(
         type: String,
         required: [true, "Please add a password"],
       },
-      // profile_pic: {
-      //   type: String,
-      //   default: "/api/file/630dc2552f6866ee7ec33221",
-      // },
-      notes: {
-        type: String,
-        default: "",
-        timestamps: true
-      },
+      notes: [],
       balance: {
         type: Number,
         default: 0,
