@@ -2,6 +2,7 @@ var express = require('express');
 const { route } = require(".")
 var router = express.Router();
 const { isAdmin} = require('../middleware/isAdminMiddleware')
+const { protect } = require('../middleware/authMiddleware');
 
 const {
   userRegister,
@@ -9,8 +10,10 @@ const {
   userUpdate,
   getBalance
 } = require("../controllers/userController");
-const { protect } = require('../middleware/authMiddleware');
 
-router.post("/register", userRegister)
+const {generateCode, confirmAdmin} = require('../controllers/adminController')
+
+router.post("/invite", protect, isAdmin, generateCode)
+router.get("/check", protect, isAdmin, confirmAdmin)
 
 module.exports = router;

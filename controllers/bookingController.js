@@ -1,5 +1,6 @@
 const Booking = require("../models/bookingModel")
 const User = require("../models/userModel")
+const Log = require('../models/logModel')
 const asyncHandler = require("express-async-handler")
 const axios = require("axios");
 
@@ -227,6 +228,11 @@ const newBooking = asyncHandler(async(req,res) => {
         //20221027.5
         date: unixDate
     })
+    const newLog = await Log.create({
+        user_address: req.user.address,
+        type: 'booking',
+        text: `${req.user.address} booked ${req.body.slots.length/2} hour/s, on ${date.day}/${date.month}/${date.year}, totalling ${total}. User's balance is now: ${user.balance-total}`
+    })
     //console.log(newBooking)
     res.status(200).json({message: 'Booking confirmed', remainingBalance: newBalance})
 
@@ -306,6 +312,12 @@ const cancelBooking = asyncHandler(async(req,res) => {
     const user = await User.findById(req.user._id)
     const updatedUser = await user.update({balance: user.balance+booking.amount})
     console.log(updatedUser)
+
+    const newLog = await Log.create({
+        user_address: req.user.address,
+        type: 'booking',
+        text: `${req.user.address} cancelled ${booking.slots.length/2} hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${booking.amount}. User's balance is now: ${user.balance+booking.amount}`
+    })
 
     //return confirmation with amount of credit and new user balance.
     res.status(200).json({message: `Booking cancelled. You have been credited ${booking.amount}.`})

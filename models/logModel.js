@@ -2,11 +2,14 @@ const mongoose = require("mongoose")
 
 const logSchema = mongoose.Schema(
     {
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
+        user_address: {
+            type: String,
         },
         text: {type: String},
+        type: {
+            type: String,
+            enum: ["booking", "refund", "topup", "other"],
+          },
     },
     {
         timestamps: true,
