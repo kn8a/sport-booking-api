@@ -84,7 +84,8 @@ const userLogin = asyncHandler(async (req,res) => {
           name_first: user.name_first,
           name_last: user.name_last,
           token: genToken(user.id),
-          balance: user.balance
+          balance: user.balance,
+          role: user.role
           // profile_pic: user.profile_pic,
         })
         //SEND EMAIL
