@@ -4,8 +4,7 @@ const Invite = require('../models/inviteModel')
 const Log = require('../models/logModel')
 const asyncHandler = require("express-async-handler")
 const axios = require("axios");
-// const Hashids = require('hashids/cjs')
-// const hashids = new Hashids()
+
 const randomString = require('random-string');
 
 const generateCode = asyncHandler(async(req,res) => {
@@ -32,7 +31,7 @@ const generateCode = asyncHandler(async(req,res) => {
         exclude: ['0','O',"o",'l','I','L',"1"]
     })
 
-    //if xists update, else create new
+    //if exists update, else create new
     if (alreadyExists) {
         await alreadyExists.update({code: code})
         res.status(200).json({code:code})
@@ -50,46 +49,16 @@ const confirmAdmin = asyncHandler(async(req,res)=> {
     res.status(200).json({admin: true})
 })
 
-const checkAvailability = asyncHandler(async(req,res) => {
+const lookupUsersTopUp = asyncHandler(async(req,res)=> {
+    const users = await User.find({status: 'approved', role:'admin'}).select({address:1, name_first:1, name_last:1, email:1, balance:1})
+    res.status(200).json({users:users})
+})
+
+const TopUp = asyncHandler(async(req,res)=> {
+    console.log(req.body)
     
-    //getBkkTime()
-
-    const localTime = await axios.get('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
-    .then(response => {
-        return response.data
-    })
-    
-    console.log(localTime)
-
-  
-    
-    const date= dateSlicer(req.params.date)
-
-   
-
-    if (futureDateChecker(date,localTime)) {
-        res.status(400).json({message: "You cannot book in the past. Please select a future date"})
-        return
-    }
-    
-
-    
-    //*get booking for date - add Select only slots
-    const existingBookings = await Booking.find({year:date.year, month:date.month, day:date.day, status:{$not: {$eq: 'cancelled'}}}).select({slots:1})
-    //console.log(existingBookings)
-    let bookedSlots=[]
-    if (existingBookings) {
-        for (let i=0; i<existingBookings.length; i++) {
-            bookedSlots.push(...existingBookings[i].slots)
-        }
-    }
-    //console.log(bookedSlots)
-
-    const times = buildTimes(bookedSlots, localTime, date)
-    //console.log(times)
-    res.status(200).json({times: times})
 })
 
 module.exports = {
-    checkAvailability, generateCode, confirmAdmin
+    generateCode, confirmAdmin, lookupUsersTopUp, TopUp
   }

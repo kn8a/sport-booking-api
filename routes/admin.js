@@ -11,9 +11,11 @@ const {
   getBalance
 } = require("../controllers/userController");
 
-const {generateCode, confirmAdmin} = require('../controllers/adminController')
+const {generateCode, confirmAdmin, lookupUsersTopUp, TopUp} = require('../controllers/adminController')
 
 router.post("/invite", protect, isAdmin, generateCode)
 router.get("/check", protect, isAdmin, confirmAdmin)
+router.get("/users-top-up", protect, isAdmin, lookupUsersTopUp)
+router.post('/top-up', protect, isAdmin, TopUp)
 
 module.exports = router;
