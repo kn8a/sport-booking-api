@@ -55,7 +55,21 @@ const lookupUsersTopUp = asyncHandler(async(req,res)=> {
 })
 
 const TopUp = asyncHandler(async(req,res)=> {
-    console.log(req.body)
+    
+    const {user, amount, receipt} = req.body
+    console.log(user, amount, receipt)
+    if (!user) {
+        res.status(400).json({message:'Please select a user and try again'})
+        return
+    }
+    if (!amount || Number(amount) % 50 != 0) {
+        res.status(400).json({message:'Please enter valid amount and try again'})
+        return
+    }
+    if (!receipt) {
+        res.status(400).json({message:'Please enter a receipt number'})
+        return
+    }
     
 })
 
