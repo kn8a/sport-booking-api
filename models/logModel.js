@@ -5,6 +5,9 @@ const logSchema = mongoose.Schema(
         user_address: {
             type: String,
         },
+        user_email: {
+            type: String,
+        },
         text: {type: String},
         type: {
             type: String,

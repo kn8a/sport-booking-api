@@ -56,9 +56,9 @@ const lookupUsersTopUp = asyncHandler(async(req,res)=> {
 
 const TopUp = asyncHandler(async(req,res)=> {
     
-    const {user, amount, receipt} = req.body
-    console.log(user, amount, receipt)
-    if (!user) {
+    const {userId, amount, receipt} = req.body
+    console.log(userId, amount, receipt)
+    if (!userId) {
         res.status(400).json({message:'Please select a user and try again'})
         return
     }
@@ -70,7 +70,22 @@ const TopUp = asyncHandler(async(req,res)=> {
         res.status(400).json({message:'Please enter a receipt number'})
         return
     }
-    
+
+    const user = await User.findById(userId)
+    if (!user) {
+        res.status(400).json({message:'This user does not exist'})
+        return
+    }
+    const newBal = user.balance+Number(amount)
+    const updatedUser = await user.update({balance:newBal})
+    const log = await Log.create({
+        user_address: user.address,
+        user_email: user.email,
+        type: "topup",
+        text: `Admin (${req.user.name_first}) added ${amount} to ${user.address} (${user.name_first}, ${user.name_last}). Receipt number is ${receipt}. User's new balance is ${newBal}`
+    })
+    res.status(200).json({message: `Added ${amount} to ${user.address}. New balance: ${newBal}`})
+
 })
 
 module.exports = {
