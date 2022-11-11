@@ -105,6 +105,7 @@ const TopUp = asyncHandler(async (req, res) => {
         Your account has been credited ${amount}.
         
         Confirmation #: ${log._id.toString()}
+        Receipt #: ${receipt}
         Your current balance: ${newBal}
 
         This is an auto-generated email.
