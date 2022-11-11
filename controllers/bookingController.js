@@ -101,7 +101,7 @@ const checkAvailability = asyncHandler(async (req, res) => {
       return response.data
     })
 
-  console.log(localTime)
+  //console.log(localTime)
 
   // const timeData = await fetch('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
   // const bkkDate = await timeData.json
@@ -175,7 +175,7 @@ const newBooking = asyncHandler(async (req, res) => {
       return response.data
     })
 
-  console.log(localTime)
+  //console.log(localTime)
 
   const date = dateSlicer(req.body.date)
   //console.log(date)
@@ -213,7 +213,7 @@ const newBooking = asyncHandler(async (req, res) => {
                 Please retry with a different time.`,
       })
       total = 0
-      console.log("already booked")
+      //console.log("already booked")
       return
     } else if (req.body.slots[i].value < 18) {
       total = total + 50
@@ -245,9 +245,9 @@ const newBooking = asyncHandler(async (req, res) => {
   }
 
   const bookDate = new Date(date.year, date.month, date.day, hour, minute)
-  console.log(bookDate)
+  //console.log(bookDate)
   const unixDate = Math.floor(bookDate.getTime() / 1000)
-  console.log(unixDate)
+  //console.log(unixDate)
 
   const userBalanceUpdate = await user.update({ balance: user.balance - total })
   //console.log(userBalanceUpdate)
@@ -325,12 +325,12 @@ const getUpcomingBookings = asyncHandler(async (req, res) => {
     date: { $gte: `${unixDate}` },
     status: "confirmed",
   }).sort({ date: 1 })
-  console.log(upcoming)
+  //console.log(upcoming)
   res.status(200).json({ upcoming: upcoming })
 })
 
 const cancelBooking = asyncHandler(async (req, res) => {
-  console.log(req.body)
+  //console.log(req.body)
 
   //get booking
   const booking = await Booking.findById(req.body._id)
@@ -407,7 +407,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
   const updatedUser = await user.update({
     balance: user.balance + booking.amount,
   })
-  console.log(updatedUser)
+  //console.log(updatedUser)
 
   const newLog = await Log.create({
     user_address: user.address,
@@ -432,7 +432,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
 
         This is an auto-generated email.
         `,
-  }).then(console.log, console.error);
+  })
 
   //return confirmation with amount of credit and new user balance.
   res.status(200).json({
