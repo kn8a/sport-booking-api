@@ -288,17 +288,14 @@ const newBooking = asyncHandler(async (req, res) => {
     text: `
         Hi ${req.user.name_first}, 
         
-        Your booking of time slots ${req.body.slots.map((slot) => {
-          return slot.time
-        })} (${req.body.slots.length / 2} hour/s) on ${date.day}/${
-      date.month
-    }/${date.year} is confirmed.
+        Your booking of time slots ${req.body.slots.map((slot) => {return slot.time})} (${req.body.slots.length / 2} hour/s) on ${date.day}/${date.month}/${date.year} is confirmed.
         
         Confirmation #: ${newBooking._id.toString()}
         Total amount charged: ${newBooking.amount}
         Remaining account balance: ${user.balance - total}
 
-        This is an auto-generated email.`,
+        This is an auto-generated email.
+        `,
   })
 
   res
@@ -413,19 +410,30 @@ const cancelBooking = asyncHandler(async (req, res) => {
   console.log(updatedUser)
 
   const newLog = await Log.create({
-    user_address: req.user.address,
+    user_address: user.address,
     type: "booking",
-    text: `${req.user.address} cancelled ${
-      booking.slots.length / 2
-    } hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${
-      booking.amount
-    }. User's balance is now: ${user.balance + booking.amount}`,
+    text: `${user.name_first} at ${user.address} cancelled ${booking.slots.length / 2} hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${booking.amount}. User's balance is now: ${user.balance + booking.amount}`,
   })
 
+  //send confirmation email
+  client.send({
+    from: sender,
+    to: [{ email: user.email }],
+    subject: `Tennis booking cancellation`,
+    text: `
+        Hi ${user.name_first}, 
+        
+        Your booking of time slots ${booking.slots_full.map((slot) => {return slot.time})} (${booking.slots.length / 2} hour/s) on ${booking.day}/${booking.month}/${booking.year} is cancelled.
+        
+        Refund amount: ${booking.amount}
+        Remaining account balance: ${user.balance + booking.amount}
+
+        This is an auto-generated email.
+        `,
+  }).then(console.log, console.error);
+
   //return confirmation with amount of credit and new user balance.
-  res
-    .status(200)
-    .json({
+  res.status(200).json({
       message: `Booking cancelled. You have been credited ${booking.amount}.`,
     })
 })
