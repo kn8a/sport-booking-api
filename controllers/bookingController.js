@@ -242,8 +242,18 @@ const newBooking = asyncHandler(async(req,res) => {
         from: sender,
         to: [{email: req.user.email}],
         subject: `Tennis booking confirmation`,
-        text: `Hi ${req.user.name_first}`
+        text: `
+        Hi ${req.user.name_first}, 
+        
+        Your booking of time slots ${req.body.slots.map(slot => {return slot.time})} (${req.body.slots.length/2} hour/s) on ${date.day}/${date.month}/${date.year} is confirmed.
+        
+        Confirmation #: ${newBooking._id.toString()}
+        Total amount charged: ${newBooking.amount}
+        Remaining account balance: ${user.balance-total}
+
+        This is an auto-generated email.`
       })
+      
     res.status(200).json({message: 'Booking confirmed', remainingBalance: newBalance})
 
 
