@@ -411,7 +411,8 @@ const cancelBooking = asyncHandler(async (req, res) => {
 
   const newLog = await Log.create({
     user_address: user.address,
-    type: "booking",
+    user_email: user.email,
+    type: "refund",
     text: `${user.name_first} at ${user.address} cancelled ${booking.slots.length / 2} hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${booking.amount}. User's balance is now: ${user.balance + booking.amount}`,
   })
 
