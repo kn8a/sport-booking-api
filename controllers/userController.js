@@ -4,9 +4,13 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const { use } = require("../routes/users")
 //const nodemailer = require("nodemailer");
-const sendMailMethod = require("../send-mail")
+// const sendMailMethod = require("../send-mail")
+const Invite = require("../models/inviteModel")
+const Log = require("../models/logModel")
 
-
+const { MailtrapClient } = require("mailtrap");
+const client = new MailtrapClient({ token: process.env.MAILTRAP_TOKEN });
+const sender = { name: "Tennis Admin", email: process.env.MAILTRAP_SENDER_EMAIL };
 
 
 //jwt token generator
@@ -17,11 +21,11 @@ const genToken = (id) => {
 //*create user with balance 0 and status pending
 const userRegister = asyncHandler(async (req,res) => { 
 
-    console.log('reg function hit')
-    console.log(req.body)
-    const {name_first, name_last, email, password, confirm_password, address} = req.body
 
-    if (!name_first || !name_last || !email || !password || !confirm_password || !address) {
+    console.log(req.body)
+    const {name_first, name_last, email, password, confirm_password, address, invitation} = req.body
+
+    if (!name_first || !name_last || !email || !password || !confirm_password || !address || !invitation) {
         res.status(400).json({ message: "Please fill out all required fields" })
         return
     }
@@ -36,12 +40,20 @@ const userRegister = asyncHandler(async (req,res) => {
         return
     }
 
+    const inviteExists = await Invite.findOne({address: address, code: invitation})
+
+    if (!inviteExists) {
+      res.status(400).json({ message: `Your invitation code is invalid, please contact admin.` })
+        return
+    }
+
     const userExists = await User.findOne({ email })
 
     if (userExists) {
         res.status(400).json({ message: `User with this email already exists` })
         return
     }
+
 
     const salt = await bcrypt.genSalt(10)
     const hashedPass = await bcrypt.hash(password, salt)
@@ -53,16 +65,22 @@ const userRegister = asyncHandler(async (req,res) => {
         password: hashedPass,
         address,
         balance: 0,
-        status: 'pending'
+        status: 'approved'
       })
 
     if (newUser) {
-        res.status(200).json({ message: "Profile created successfully" })
+        await Log.create({
+          user_address: address,
+          user_email: email,
+          text: `New user ${name_first} ${name_last} (${email}) registered with address ${address}, using invite code ${inviteExists.code}. Balance: ${0}`,
+          type: 'registration'
+        })
+        inviteExists.deleteOne()
         
+        res.status(200).json({ message: "Profile created successfully" })        
         
     } else {
         res.status(400).json({ message: "Failed to register, please retry." })
-        
     }
 })
 

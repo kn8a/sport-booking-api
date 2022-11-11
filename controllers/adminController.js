@@ -49,7 +49,7 @@ const confirmAdmin = asyncHandler(async (req, res) => {
 })
 
 const lookupUsersTopUp = asyncHandler(async (req, res) => {
-  const users = await User.find({ status: "approved", role: "admin" }).select({
+  const users = await User.find({ status: "approved", role: "user" }).select({
     address: 1,
     name_first: 1,
     name_last: 1,

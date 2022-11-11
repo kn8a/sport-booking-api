@@ -3,6 +3,10 @@ const User = require("../models/userModel")
 const Log = require('../models/logModel')
 const asyncHandler = require("express-async-handler")
 const axios = require("axios");
+const { MailtrapClient } = require("mailtrap");
+
+const client = new MailtrapClient({ token: process.env.MAILTRAP_TOKEN });
+const sender = { name: "Tennis Admin", email: process.env.MAILTRAP_SENDER_EMAIL };
 
   function buildTimes(bookedSlots,localTime, date) {
     // console.log(date)
@@ -234,6 +238,12 @@ const newBooking = asyncHandler(async(req,res) => {
         text: `${req.user.address} booked ${req.body.slots.length/2} hour/s, on ${date.day}/${date.month}/${date.year}, totalling ${total}. User's balance is now: ${user.balance-total}`
     })
     //console.log(newBooking)
+    client.send({
+        from: sender,
+        to: [{email: req.user.email}],
+        subject: `Tennis booking confirmation`,
+        text: `Hi ${req.user.name_first}`
+      })
     res.status(200).json({message: 'Booking confirmed', remainingBalance: newBalance})
 
 

@@ -11,7 +11,7 @@ const logSchema = mongoose.Schema(
         text: {type: String},
         type: {
             type: String,
-            enum: ["booking", "refund", "topup", "other"],
+            enum: ["booking", "refund", "topup", "other", "registration"],
           },
     },
     {
