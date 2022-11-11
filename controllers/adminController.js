@@ -4,6 +4,12 @@ const Invite = require("../models/inviteModel")
 const Log = require("../models/logModel")
 const asyncHandler = require("express-async-handler")
 const axios = require("axios")
+const { MailtrapClient } = require("mailtrap")
+const client = new MailtrapClient({ token: process.env.MAILTRAP_TOKEN })
+const sender = {
+  name: "Tennis Admin",
+  email: process.env.MAILTRAP_SENDER_EMAIL,
+}
 
 const randomString = require("random-string")
 
@@ -87,6 +93,22 @@ const TopUp = asyncHandler(async (req, res) => {
     user_email: user.email,
     type: "topup",
     text: `Admin (${req.user.name_first}) added ${amount} to ${user.address} (${user.name_first}, ${user.name_last}). Receipt number is ${receipt}. User's new balance is ${newBal}`,
+  })
+  //send confirmation email
+  client.send({
+    from: sender,
+    to: [{ email: user.email }],
+    subject: `Tennis top-up confirmation`,
+    text: `
+        Hi ${user.name_first}, 
+        
+        Your account has been credited ${amount}.
+        
+        Confirmation #: ${log._id.toString()}
+        Your current balance: ${newBal}
+
+        This is an auto-generated email.
+        `,
   })
   res
     .status(200)

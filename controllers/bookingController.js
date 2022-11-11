@@ -426,6 +426,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
         
         Your booking of time slots ${booking.slots_full.map((slot) => {return slot.time})} (${booking.slots.length / 2} hour/s) on ${booking.day}/${booking.month}/${booking.year} is cancelled.
         
+        Confirmation #: ${newLog._id.toString()}
         Refund amount: ${booking.amount}
         Remaining account balance: ${user.balance + booking.amount}
 
