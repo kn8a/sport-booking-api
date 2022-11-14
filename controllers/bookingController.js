@@ -447,8 +447,3 @@ module.exports = {
   cancelBooking,
 }
 
-//   if (
-//     (localTime.year == reqDate.year && localTime.month == reqDate.month && localTime.day > reqDate.day) ||
-//     (localTime.year == reqDate.year && localTime.month > reqDate.month) ||
-//     (localTime.year > reqDate.year)
-// )

@@ -118,9 +118,70 @@ const TopUp = asyncHandler(async (req, res) => {
     })
 })
 
+const getPastBooking = asyncHandler(async (req, res) => {
+  console.log(req.body)
+
+  const localTime = await axios
+    .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
+    .then((response) => {
+      return response.data
+    })
+
+    const requestTime = new Date(
+      localTime.year,
+      localTime.month,
+      localTime.day,
+      localTime.hour,
+      localTime.minute
+    )
+    const unixDateCur = Math.floor(requestTime.getTime() / 1000)
+    console.log(requestTime)
+    requestTime.setDate(requestTime.getDate() -30)
+    const unixDatePast = Math.floor(requestTime.getTime() / 1000)
+    console.log(requestTime)
+
+    const pastBookings = await Booking.find({status: 'confirmed', $and: [{date: {$gt: unixDatePast}, status:'confirmed'},{date: {$lt: unixDateCur}}]}).populate({
+      path: "user",
+      select: { name_first: 1, name_last: 1, address: 1 },
+    })
+    console.log(pastBookings)
+    res.status(200).json({bookings: pastBookings})
+})
+
+const getFutureBooking = asyncHandler(async (req, res) => {
+  console.log(req.body)
+
+  const localTime = await axios
+    .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
+    .then((response) => {
+      return response.data
+    })
+
+    const requestTime = new Date(
+      localTime.year,
+      localTime.month,
+      localTime.day,
+      localTime.hour,
+      localTime.minute
+    )
+    const unixDateCur = Math.floor(requestTime.getTime() / 1000)
+    console.log(requestTime)
+    
+    const futureBookings = await Booking.find({status: 'confirmed', date: {$gt: unixDateCur}}).populate({
+      path: "user",
+      select: { name_first: 1, name_last: 1, address: 1 },
+    })
+    console.log(futureBookings)
+    res.status(200).json({bookings: futureBookings})
+})
+
+
+
 module.exports = {
   generateCode,
   confirmAdmin,
   lookupUsersTopUp,
   TopUp,
+  getPastBooking,
+  getFutureBooking
 }

@@ -8,14 +8,16 @@ const {
   userRegister,
   userLogin,
   userUpdate,
-  getBalance
+  getBalance,
 } = require("../controllers/userController");
 
-const {generateCode, confirmAdmin, lookupUsersTopUp, TopUp} = require('../controllers/adminController')
+const {generateCode, confirmAdmin, lookupUsersTopUp, TopUp, getPastBooking, getFutureBooking} = require('../controllers/adminController')
 
 router.post("/invite", protect, isAdmin, generateCode)
 router.get("/check", protect, isAdmin, confirmAdmin)
 router.get("/users-top-up", protect, isAdmin, lookupUsersTopUp)
 router.post('/top-up', protect, isAdmin, TopUp)
+router.get("/bookings/past", protect, isAdmin, getPastBooking)
+router.get("/bookings/future", protect, isAdmin, getFutureBooking)
 
 module.exports = router;
