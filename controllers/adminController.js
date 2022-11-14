@@ -33,7 +33,7 @@ const generateCode = asyncHandler(async (req, res) => {
     length: 6,
     numeric: true,
     letters: true,
-    exclude: ["0", "O", "o", "l", "I", "L", "1", 'i', 'q'],
+    exclude: ["0", "O", "o", "l", "I", "L", "1", "i", "q"],
   })
 
   //if exists update, else create new
@@ -111,80 +111,100 @@ const TopUp = asyncHandler(async (req, res) => {
         This is an auto-generated email.
         `,
   })
-  res
-    .status(200)
-    .json({
-      message: `Added ${amount} to ${user.address}. New balance: ${newBal}`,
-    })
+  res.status(200).json({
+    message: `Added ${amount} to ${user.address}. New balance: ${newBal}`,
+  })
 })
 
 const getPastBooking = asyncHandler(async (req, res) => {
-
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
     .then((response) => {
       return response.data
     })
 
-    const requestTime = new Date(
-      localTime.year,
-      localTime.month,
-      localTime.day,
-      localTime.hour,
-      localTime.minute
-    )
-    const unixDateCur = Math.floor(requestTime.getTime() / 1000)
-    requestTime.setDate(requestTime.getDate() -30)
-    const unixDatePast = Math.floor(requestTime.getTime() / 1000)
+  const requestTime = new Date(
+    localTime.year,
+    localTime.month,
+    localTime.day,
+    localTime.hour,
+    localTime.minute
+  )
+  const unixDateCur = Math.floor(requestTime.getTime() / 1000)
+  requestTime.setDate(requestTime.getDate() - 30)
+  const unixDatePast = Math.floor(requestTime.getTime() / 1000)
 
-    const pastBookings = await Booking.find({status: 'confirmed', $and: [{date: {$gt: unixDatePast}, status:'confirmed'},{date: {$lt: unixDateCur}}]}).populate({
+  const pastBookings = await Booking.find({
+    status: "confirmed",
+    $and: [
+      { date: { $gt: unixDatePast }, status: "confirmed" },
+      { date: { $lt: unixDateCur } },
+    ],
+  })
+    .populate({
       path: "user",
       select: { name_first: 1, name_last: 1, address: 1 },
-    }).sort({ date: -1 })
-    res.status(200).json({bookings: pastBookings})
+    })
+    .sort({ date: -1 })
+  res.status(200).json({ bookings: pastBookings })
 })
 
 const getFutureBooking = asyncHandler(async (req, res) => {
-
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
     .then((response) => {
       return response.data
     })
 
-    const requestTime = new Date(
-      localTime.year,
-      localTime.month,
-      localTime.day,
-      localTime.hour,
-      localTime.minute
-    )
-    const unixDateCur = Math.floor(requestTime.getTime() / 1000)
-    console.log(requestTime)
-    
-    const futureBookings = await Booking.find({status: 'confirmed', date: {$gt: unixDateCur}}).populate({
+  const requestTime = new Date(
+    localTime.year,
+    localTime.month,
+    localTime.day,
+    localTime.hour,
+    localTime.minute
+  )
+  const unixDateCur = Math.floor(requestTime.getTime() / 1000)
+  console.log(requestTime)
+
+  const futureBookings = await Booking.find({
+    status: "confirmed",
+    date: { $gt: unixDateCur },
+  })
+    .populate({
       path: "user",
       select: { name_first: 1, name_last: 1, address: 1 },
-    }).sort({ date: 1 })
-    res.status(200).json({bookings: futureBookings})
+    })
+    .sort({ date: 1 })
+  res.status(200).json({ bookings: futureBookings })
 })
 
 const cancelBooking = asyncHandler(async (req, res) => {
   const booking = await Booking.findById(req.body._id)
-  if (booking.status == 'cancelled') {
-    res.json(400).json({message: 'This booking has already been cancelled. Go back to main menu to refresh.'})
+  if (booking.status == "cancelled") {
+    res
+      .json(400)
+      .json({
+        message:
+          "This booking has already been cancelled. Go back to main menu to refresh.",
+      })
     return
   }
   const user = await User.findById(req.body.user._id)
   console.log(booking)
   const newBal = user.balance + booking.amount
-  const bookingupdate = await booking.update({status: 'cancelled'})
-  const userUpdate = await user.update({balance: newBal})
+  const bookingupdate = await booking.update({ status: "cancelled" })
+  const userUpdate = await user.update({ balance: newBal })
   const newLog = await Log.create({
     user_address: user.address,
     user_email: req.user.email,
     type: "refund",
-    text: `Admin (${req.user.name_first}) cancelled/refunded ${booking.slots.length / 2} hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${booking.amount}. For address: ${user.address} (${user.name_first}). User's balance is now: ${user.balance + booking.amount}`,
+    text: `Admin (${req.user.name_first}) cancelled/refunded ${
+      booking.slots.length / 2
+    } hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${
+      booking.amount
+    }. For address: ${user.address} (${
+      user.name_first
+    }). User's balance is now: ${user.balance + booking.amount}`,
   })
   console.log(newLog)
   client.send({
@@ -194,7 +214,11 @@ const cancelBooking = asyncHandler(async (req, res) => {
     text: `
         Hi ${user.name_first}, 
         
-        Your booking of time slots ${booking.slots_full.map((slot) => {return slot.time})} (${booking.slots.length / 2} hour/s) on ${booking.day}/${booking.month}/${booking.year}, has been cancelled by admin (${req.user.name_first}).
+        Your booking of time slots ${booking.slots_full.map((slot) => {
+          return slot.time
+        })} (${booking.slots.length / 2} hour/s) on ${booking.day}/${
+      booking.month
+    }/${booking.year}, has been cancelled by admin (${req.user.name_first}).
         
         Confirmation #: ${newLog._id.toString()}
         Refund amount: ${booking.amount}
@@ -209,10 +233,6 @@ const cancelBooking = asyncHandler(async (req, res) => {
   })
 })
 
-
-
-
-
 module.exports = {
   generateCode,
   confirmAdmin,
@@ -220,5 +240,5 @@ module.exports = {
   TopUp,
   getPastBooking,
   getFutureBooking,
-  cancelBooking
+  cancelBooking,
 }
