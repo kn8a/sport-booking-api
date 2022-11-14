@@ -119,7 +119,6 @@ const TopUp = asyncHandler(async (req, res) => {
 })
 
 const getPastBooking = asyncHandler(async (req, res) => {
-  console.log(req.body)
 
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
@@ -135,21 +134,17 @@ const getPastBooking = asyncHandler(async (req, res) => {
       localTime.minute
     )
     const unixDateCur = Math.floor(requestTime.getTime() / 1000)
-    console.log(requestTime)
     requestTime.setDate(requestTime.getDate() -30)
     const unixDatePast = Math.floor(requestTime.getTime() / 1000)
-    console.log(requestTime)
 
     const pastBookings = await Booking.find({status: 'confirmed', $and: [{date: {$gt: unixDatePast}, status:'confirmed'},{date: {$lt: unixDateCur}}]}).populate({
       path: "user",
       select: { name_first: 1, name_last: 1, address: 1 },
-    })
-    console.log(pastBookings)
+    }).sort({ date: -1 })
     res.status(200).json({bookings: pastBookings})
 })
 
 const getFutureBooking = asyncHandler(async (req, res) => {
-  console.log(req.body)
 
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
@@ -170,10 +165,51 @@ const getFutureBooking = asyncHandler(async (req, res) => {
     const futureBookings = await Booking.find({status: 'confirmed', date: {$gt: unixDateCur}}).populate({
       path: "user",
       select: { name_first: 1, name_last: 1, address: 1 },
-    })
-    console.log(futureBookings)
+    }).sort({ date: 1 })
     res.status(200).json({bookings: futureBookings})
 })
+
+const cancelBooking = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.body._id)
+  if (booking.status == 'cancelled') {
+    res.json(400).json({message: 'This booking has already been cancelled. Go back to main menu to refresh.'})
+    return
+  }
+  const user = await User.findById(req.body.user._id)
+  console.log(booking)
+  const newBal = user.balance + booking.amount
+  const bookingupdate = await booking.update({status: 'cancelled'})
+  const userUpdate = await user.update({balance: newBal})
+  const newLog = await Log.create({
+    user_address: user.address,
+    user_email: req.user.email,
+    type: "refund",
+    text: `Admin (${req.user.name_first}) cancelled/refunded ${booking.slots.length / 2} hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${booking.amount}. For address: ${user.address} (${user.name_first}). User's balance is now: ${user.balance + booking.amount}`,
+  })
+  console.log(newLog)
+  client.send({
+    from: sender,
+    to: [{ email: user.email }],
+    subject: `Tennis booking cancellation`,
+    text: `
+        Hi ${user.name_first}, 
+        
+        Your booking of time slots ${booking.slots_full.map((slot) => {return slot.time})} (${booking.slots.length / 2} hour/s) on ${booking.day}/${booking.month}/${booking.year}, has been cancelled by admin (${req.user.name_first}).
+        
+        Confirmation #: ${newLog._id.toString()}
+        Refund amount: ${booking.amount}
+        New account balance: ${user.balance + booking.amount}
+
+        This is an auto-generated email.
+        `,
+  })
+  //return confirmation with amount of credit and new user balance.
+  res.status(200).json({
+    message: `Booking cancelled. ${user.address} has been credited ${booking.amount}.`,
+  })
+})
+
+
 
 
 
@@ -183,5 +219,6 @@ module.exports = {
   lookupUsersTopUp,
   TopUp,
   getPastBooking,
-  getFutureBooking
+  getFutureBooking,
+  cancelBooking
 }
