@@ -11,11 +11,12 @@ const {
   getBalance,
 } = require("../controllers/userController");
 
-const {generateCode, confirmAdmin, lookupUsersTopUp, TopUp, getPastBooking, getFutureBooking, cancelBooking} = require('../controllers/adminController')
+const {generateCode, confirmAdmin, lookupUsersTopUp, TopUp, getPastBooking, getFutureBooking, cancelBooking, lookupUsersManage} = require('../controllers/adminController')
 
 router.post("/invite", protect, isAdmin, generateCode)
 router.get("/check", protect, isAdmin, confirmAdmin)
 router.get("/users-top-up", protect, isAdmin, lookupUsersTopUp)
+router.get("/users-manage", protect, isAdmin, lookupUsersManage)
 router.post('/top-up', protect, isAdmin, TopUp)
 router.get("/bookings/past", protect, isAdmin, getPastBooking)
 router.get("/bookings/future", protect, isAdmin, getFutureBooking)

@@ -61,6 +61,14 @@ const lookupUsersTopUp = asyncHandler(async (req, res) => {
     name_last: 1,
     email: 1,
     balance: 1,
+    status: 1
+  })
+  res.status(200).json({ users: users })
+})
+
+const lookupUsersManage = asyncHandler(async (req, res) => {
+  const users = await User.find().select({
+    password: 0
   })
   res.status(200).json({ users: users })
 })
@@ -241,4 +249,5 @@ module.exports = {
   getPastBooking,
   getFutureBooking,
   cancelBooking,
+  lookupUsersManage,
 }
