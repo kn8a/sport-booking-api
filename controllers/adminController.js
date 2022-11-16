@@ -68,7 +68,7 @@ const lookupUsersTopUp = asyncHandler(async (req, res) => {
 
 const lookupUsersManage = asyncHandler(async (req, res) => {
   const users = await User.find().select({
-    password: 0
+    password: 0, notes: 0
   })
   res.status(200).json({ users: users })
 })
@@ -241,6 +241,33 @@ const cancelBooking = asyncHandler(async (req, res) => {
   })
 })
 
+const userUpdate = asyncHandler(async (req, res) => {
+  console.log(req.body)
+
+  const note = req.body.note
+  const id = req.body.id
+  
+  const user = await User.findByIdAndUpdate(id, req.body.new, {
+    new: true,
+  })
+  await user.update({$push: {notes: note}})
+
+  const newLog = Log.create({
+    created_by: req.user._id,
+    reference_user: user._id,
+    user_address: user.address,
+    user_email: user.email,
+    type: "other",
+    text: `Admin (${req.user.name_first} ${req.user.name_last}) manually updated user from ${JSON.stringify(req.body.old)} to ${JSON.stringify(req.body.new)}`,
+  })
+
+  res.status(200).json({ message: "User updated" })
+  //console.log(user)
+
+})
+
+
+
 module.exports = {
   generateCode,
   confirmAdmin,
@@ -250,4 +277,5 @@ module.exports = {
   getFutureBooking,
   cancelBooking,
   lookupUsersManage,
+  userUpdate,
 }
