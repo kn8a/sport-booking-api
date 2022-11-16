@@ -244,8 +244,19 @@ const cancelBooking = asyncHandler(async (req, res) => {
 const userUpdate = asyncHandler(async (req, res) => {
   console.log(req.body)
 
+
   const note = req.body.note
   const id = req.body.id
+
+  if (!req.body.new) {
+    res.status(400).json({ message: "No changes made, nothing to update." })
+    return
+  }
+
+  if (!note) {
+    res.status(400).json({ message: "You must include a note explaining changes" })
+    return
+  }
   
   const user = await User.findByIdAndUpdate(id, req.body.new, {
     new: true,
@@ -257,7 +268,7 @@ const userUpdate = asyncHandler(async (req, res) => {
     reference_user: user._id,
     user_address: user.address,
     user_email: user.email,
-    type: "other",
+    type: "edit",
     text: `Admin (${req.user.name_first} ${req.user.name_last}) manually updated user from ${JSON.stringify(req.body.old)} to ${JSON.stringify(req.body.new)}`,
   })
 
