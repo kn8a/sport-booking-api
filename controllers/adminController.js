@@ -131,13 +131,19 @@ const getPastBooking = asyncHandler(async (req, res) => {
       return response.data
     })
 
-  const requestTime = new Date(
+  const requestTime = new Date(Date.UTC(
     localTime.year,
     localTime.month,
     localTime.day,
     localTime.hour,
     localTime.minute
-  )
+  ))
+  
+
+
+  console.log(localTime)
+  console.log(requestTime)
+
   const unixDateCur = Math.floor(requestTime.getTime() / 1000)
   requestTime.setDate(requestTime.getDate() - 30)
   const unixDatePast = Math.floor(requestTime.getTime() / 1000)
@@ -164,13 +170,13 @@ const getFutureBooking = asyncHandler(async (req, res) => {
       return response.data
     })
 
-  const requestTime = new Date(
+  const requestTime = new Date(Date.UTC(
     localTime.year,
     localTime.month,
     localTime.day,
     localTime.hour,
     localTime.minute
-  )
+  ))
   const unixDateCur = Math.floor(requestTime.getTime() / 1000)
   console.log(requestTime)
 

@@ -244,7 +244,7 @@ const newBooking = asyncHandler(async (req, res) => {
     minute = 0
   }
 
-  const bookDate = new Date(date.year, date.month, date.day, hour, minute)
+  const bookDate = new Date(Date.UTC(date.year, date.month, date.day, hour, minute))
   //console.log(bookDate)
   const unixDate = Math.floor(bookDate.getTime() / 1000)
   //console.log(unixDate)
@@ -311,13 +311,13 @@ const getUpcomingBookings = asyncHandler(async (req, res) => {
       return response.data
     })
 
-  const requestTime = new Date(
+  const requestTime = new Date(Date.UTC(
     localTime.year,
     localTime.month,
     localTime.day,
     localTime.hour,
     localTime.minute
-  )
+  ))
   const unixDate = Math.floor(requestTime.getTime() / 1000)
 
   const upcoming = await Booking.find({
@@ -363,13 +363,13 @@ const cancelBooking = asyncHandler(async (req, res) => {
     })
 
   //check that booking is not in the past
-  const requestTime = new Date(
+  const requestTime = new Date(Date.UTC(
     localTime.year,
     localTime.month,
     localTime.day,
     localTime.hour,
     localTime.minute
-  )
+  ))
   const requestUnixDate = Math.floor(requestTime.getTime() / 1000)
 
   let hour = 0
@@ -381,13 +381,13 @@ const cancelBooking = asyncHandler(async (req, res) => {
     hour = booking.slots[0]
     minute = 0
   }
-  const bookingTime = new Date(
+  const bookingTime = new Date(Date.UTC(
     booking.year,
     booking.month,
     booking.day,
     hour,
     minute
-  )
+  ))
   const bookingUnixTime = Math.floor(bookingTime.getTime() / 1000)
 
   if (bookingUnixTime < requestUnixDate) {
