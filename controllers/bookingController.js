@@ -272,6 +272,8 @@ const newBooking = asyncHandler(async (req, res) => {
   })
   //log the booking
   const newLog = await Log.create({
+    created_by: req.user._id,
+    reference_user: req.user._id,
     user_address: req.user.address,
     type: "booking",
     text: `${req.user.address} booked ${req.body.slots.length / 2} hour/s, on ${
@@ -305,6 +307,7 @@ const newBooking = asyncHandler(async (req, res) => {
 
 //*Get my booking
 const getUpcomingBookings = asyncHandler(async (req, res) => {
+  
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
     .then((response) => {
@@ -410,6 +413,8 @@ const cancelBooking = asyncHandler(async (req, res) => {
   //console.log(updatedUser)
 
   const newLog = await Log.create({
+    created_by: req.user._id,
+    reference_user: req.user._id,
     user_address: user.address,
     user_email: user.email,
     type: "refund",
