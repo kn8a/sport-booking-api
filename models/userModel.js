@@ -32,7 +32,7 @@ const userSchema = mongoose.Schema(
         type: String,
         required: true,
         default: "user",
-        enum: ["user", "admin", "dev", "manager"],
+        enum: ["user", "admin", "dev", "manager", "guard"],
       },
       status: {
         type: String,

@@ -2,6 +2,8 @@ const Booking = require("../models/bookingModel")
 const User = require("../models/userModel")
 const Invite = require("../models/inviteModel")
 const Log = require("../models/logModel")
+const bcrypt = require("bcryptjs")
+
 const asyncHandler = require("express-async-handler")
 const axios = require("axios")
 const { MailtrapClient } = require("mailtrap")
@@ -32,8 +34,7 @@ const generateCode = asyncHandler(async (req, res) => {
   const code = randomString({
     length: 6,
     numeric: true,
-    letters: true,
-    exclude: ["0", "O", "o", "l", "I", "L", "1", "i", "q"],
+    letters: false,
   })
 
   //if exists update, else create new
@@ -283,9 +284,90 @@ const userUpdate = asyncHandler(async (req, res) => {
 
 })
 
+const addUser = asyncHandler(async (req,res) => { 
+
+  console.log(req.body)
+  const {name_first, name_last, email, password, confirm_password, address, role} = req.body
+
+  if (!name_first || !name_last || !email || !password || !confirm_password || !address || !role) {
+      res.status(400).json({ message: "Please fill out all required fields" })
+      return
+  }
+
+  if (password != confirm_password) {
+      res.status(400).json({ message: `Passwords don't match. Please retry.` })
+      return
+  }
+
+  if (password.length < 8) {
+      res.status(400).json({ message: `Password is too short, must be at least 8 characters` })
+      return
+  }
+
+  const userExists = await User.findOne({ email })
+
+  if (userExists) {
+      res.status(400).json({ message: `User with this email already exists` })
+      return
+  }
+
+  const salt = await bcrypt.genSalt(10)
+  const hashedPass = await bcrypt.hash(password, salt)
+
+  const newUser = await User.create({
+      name_first,
+      name_last,
+      email,
+      role: role,
+      password: hashedPass,
+      address,
+      balance: 0,
+      status: 'approved'
+    })
+
+
+
+  if (newUser) {
+      await Log.create({
+        created_by: req.user._id,
+        reference_user: newUser._id,
+        user_address: address,
+        user_email: email,
+        text: `Admin (${req.user.name_first} ${req.user.name_last}) manually added a new ${role} ${newUser.name_first} ${newUser.name_last} (${newUser.email}) with address ${newUser.address}. Balance: ${0}`,
+        type: 'registration'
+      })
+
+      if (role == 'user') {
+        client.send({
+          from: sender,
+          to: [{ email: newUser.email }],
+          subject: `KortGo registration`,
+          text: `
+              Hi ${newUser.name_first}, 
+              
+              Welcome to KortGo!
+  
+              Please top-up your account at the office to start making bookings.
+  
+              This is an auto-generated email.
+              `,
+        })
+      }
+
+      
+      
+      res.status(200).json({ message: "User created successfully", id: newUser._id })        
+      
+  } else {
+      res.status(400).json({ message: "Failed to add user, please retry." })
+  }
+})
+
+
 
 
 module.exports = {
+  addUser,
   generateCode,
   confirmAdmin,
   lookupUsersTopUp,

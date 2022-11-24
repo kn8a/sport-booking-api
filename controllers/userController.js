@@ -3,10 +3,10 @@ const asyncHandler = require("express-async-handler")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const { use } = require("../routes/users")
-//const nodemailer = require("nodemailer");
-// const sendMailMethod = require("../send-mail")
+
 const Invite = require("../models/inviteModel")
 const Log = require("../models/logModel")
+
 
 const { MailtrapClient } = require("mailtrap");
 const client = new MailtrapClient({ token: process.env.MAILTRAP_TOKEN });
@@ -55,8 +55,10 @@ const userRegister = asyncHandler(async (req,res) => {
     }
 
 
+
     const salt = await bcrypt.genSalt(10)
     const hashedPass = await bcrypt.hash(password, salt)
+  
 
     const newUser = await User.create({
         name_first,
@@ -68,20 +70,43 @@ const userRegister = asyncHandler(async (req,res) => {
         status: 'approved'
       })
 
+
+
     if (newUser) {
         await Log.create({
+          created_by: newUser._id,
+          reference_user: newUser._id,
           user_address: address,
           user_email: email,
           text: `New user ${name_first} ${name_last} (${email}) registered with address ${address}, using invite code ${inviteExists.code}. Balance: ${0}`,
           type: 'registration'
         })
         inviteExists.deleteOne()
+
+        client.send({
+          from: sender,
+          to: [{ email: newUser.email }],
+          subject: `KortGo registration`,
+          text: `
+              Hi ${newUser.name_first}, 
+              
+              Welcome to KortGo!
+
+              Please top-up your account at the office to start making bookings.
+
+              This is an auto-generated email.
+              `,
+        })
         
-        res.status(200).json({ message: "Profile created successfully" })        
+        res.status(200).json({ message: "Profile created successfully", id: newUser._id })        
         
     } else {
         res.status(400).json({ message: "Failed to register, please retry." })
     }
+})
+
+const validateEmail = asyncHandler(async (req, res) => {
+  
 })
 
 //* user login
