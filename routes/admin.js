@@ -10,7 +10,7 @@ const {
   getBalance,
 } = require("../controllers/userController");
 
-const {generateCode, confirmAdmin, lookupUsersTopUp, TopUp, getPastBooking, getFutureBooking, cancelBooking, lookupUsersManage, userUpdate, addUser} = require('../controllers/adminController')
+const {generateCode, confirmAdmin, fetchLogs, lookupUsersTopUp, TopUp, getPastBooking, getFutureBooking, cancelBooking, lookupUsersManage, userUpdate, addUser} = require('../controllers/adminController')
 
 router.post("/invite", protect, isAdmin, generateCode)
 router.get("/check", protect, isAdmin, confirmAdmin)
@@ -22,5 +22,6 @@ router.get("/bookings/future", protect, isAdmin, getFutureBooking)
 router.put("/bookings/cancel", protect, isAdmin, cancelBooking)
 router.put("/users/update", protect, isAdmin, userUpdate)
 router.post("/users/add", protect, isAdmin, addUser)
+router.get('/logs/:type/:duration', protect, isAdmin, fetchLogs)
 
 module.exports = router;

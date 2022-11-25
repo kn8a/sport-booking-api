@@ -134,7 +134,7 @@ const getPastBooking = asyncHandler(async (req, res) => {
 
   const requestTime = new Date(Date.UTC(
     localTime.year,
-    localTime.month,
+    localTime.month-1,
     localTime.day,
     localTime.hour,
     localTime.minute
@@ -173,7 +173,7 @@ const getFutureBooking = asyncHandler(async (req, res) => {
 
   const requestTime = new Date(Date.UTC(
     localTime.year,
-    localTime.month,
+    localTime.month-1,
     localTime.day,
     localTime.hour,
     localTime.minute
@@ -364,10 +364,37 @@ const addUser = asyncHandler(async (req,res) => {
 })
 
 
+const fetchLogs = asyncHandler(async (req, res) => {
+    console.log(req.params)
+    const localTime = await axios
+    .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
+    .then((response) => {
+      //console.log(response.data)
+      return response.data
+
+    })
+
+  const requestTime = new Date(Date.UTC(
+    localTime.year,
+    localTime.month-1,
+    localTime.day,
+    localTime.hour,
+    localTime.minute
+  ))
+  //console.log(requestTime)
+  requestTime.setDate(requestTime.getDate() - Number(req.params.duration))
+  //console.log(requestTime)
+  const fetchedLogs = await Log.find({type: req.params.type, createdAt: {$gt: requestTime}}).sort({createdAt: 'descending'})
+  console.log(fetchedLogs)
+  res.status(200).json({logs: fetchedLogs})
+})
+
+
 
 
 module.exports = {
   addUser,
+  fetchLogs,
   generateCode,
   confirmAdmin,
   lookupUsersTopUp,
