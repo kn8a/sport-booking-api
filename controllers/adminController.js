@@ -62,14 +62,15 @@ const lookupUsersTopUp = asyncHandler(async (req, res) => {
     name_last: 1,
     email: 1,
     balance: 1,
-    status: 1
+    status: 1,
   })
   res.status(200).json({ users: users })
 })
 
 const lookupUsersManage = asyncHandler(async (req, res) => {
   const users = await User.find().select({
-    password: 0, notes: 0
+    password: 0,
+    notes: 0,
   })
   res.status(200).json({ users: users })
 })
@@ -132,15 +133,15 @@ const getPastBooking = asyncHandler(async (req, res) => {
       return response.data
     })
 
-  const requestTime = new Date(Date.UTC(
-    localTime.year,
-    localTime.month-1,
-    localTime.day,
-    localTime.hour,
-    localTime.minute
-  ))
-  
-
+  const requestTime = new Date(
+    Date.UTC(
+      localTime.year,
+      localTime.month - 1,
+      localTime.day,
+      localTime.hour,
+      localTime.minute
+    )
+  )
 
   console.log(localTime)
   console.log(requestTime)
@@ -171,13 +172,15 @@ const getFutureBooking = asyncHandler(async (req, res) => {
       return response.data
     })
 
-  const requestTime = new Date(Date.UTC(
-    localTime.year,
-    localTime.month-1,
-    localTime.day,
-    localTime.hour,
-    localTime.minute
-  ))
+  const requestTime = new Date(
+    Date.UTC(
+      localTime.year,
+      localTime.month - 1,
+      localTime.day,
+      localTime.hour,
+      localTime.minute
+    )
+  )
   const unixDateCur = Math.floor(requestTime.getTime() / 1000)
   console.log(requestTime)
 
@@ -196,12 +199,10 @@ const getFutureBooking = asyncHandler(async (req, res) => {
 const cancelBooking = asyncHandler(async (req, res) => {
   const booking = await Booking.findById(req.body._id)
   if (booking.status == "cancelled") {
-    res
-      .json(400)
-      .json({
-        message:
-          "This booking has already been cancelled. Go back to main menu to refresh.",
-      })
+    res.json(400).json({
+      message:
+        "This booking has already been cancelled. Go back to main menu to refresh.",
+    })
     return
   }
   const user = await User.findById(req.body.user._id)
@@ -251,7 +252,6 @@ const cancelBooking = asyncHandler(async (req, res) => {
 const userUpdate = asyncHandler(async (req, res) => {
   console.log(req.body)
 
-
   const note = req.body.note
   const id = req.body.id
 
@@ -261,14 +261,16 @@ const userUpdate = asyncHandler(async (req, res) => {
   }
 
   if (!note) {
-    res.status(400).json({ message: "You must include a note explaining changes" })
+    res
+      .status(400)
+      .json({ message: "You must include a note explaining changes" })
     return
   }
-  
+
   const user = await User.findByIdAndUpdate(id, req.body.new, {
     new: true,
   })
-  await user.update({$push: {notes: note}})
+  await user.update({ $push: { notes: note } })
 
   const newLog = Log.create({
     created_by: req.user._id,
@@ -276,73 +278,95 @@ const userUpdate = asyncHandler(async (req, res) => {
     user_address: user.address,
     user_email: user.email,
     type: "edit",
-    text: `Admin (${req.user.name_first} ${req.user.name_last}) manually updated user from ${JSON.stringify(req.body.old)} to ${JSON.stringify(req.body.new)}`,
+    text: `Admin (${req.user.name_first} ${
+      req.user.name_last
+    }) manually updated user from ${JSON.stringify(
+      req.body.old
+    )} to ${JSON.stringify(req.body.new)}`,
   })
 
   res.status(200).json({ message: "User updated" })
   //console.log(user)
-
 })
 
-const addUser = asyncHandler(async (req,res) => { 
-
+const addUser = asyncHandler(async (req, res) => {
   console.log(req.body)
-  const {name_first, name_last, email, password, confirm_password, address, role} = req.body
+  const {
+    name_first,
+    name_last,
+    email,
+    password,
+    confirm_password,
+    address,
+    role,
+  } = req.body
 
-  if (!name_first || !name_last || !email || !password || !confirm_password || !address || !role) {
-      res.status(400).json({ message: "Please fill out all required fields" })
-      return
+  if (
+    !name_first ||
+    !name_last ||
+    !email ||
+    !password ||
+    !confirm_password ||
+    !address ||
+    !role
+  ) {
+    res.status(400).json({ message: "Please fill out all required fields" })
+    return
   }
 
   if (password != confirm_password) {
-      res.status(400).json({ message: `Passwords don't match. Please retry.` })
-      return
+    res.status(400).json({ message: `Passwords don't match. Please retry.` })
+    return
   }
 
   if (password.length < 8) {
-      res.status(400).json({ message: `Password is too short, must be at least 8 characters` })
-      return
+    res
+      .status(400)
+      .json({ message: `Password is too short, must be at least 8 characters` })
+    return
   }
 
   const userExists = await User.findOne({ email })
 
   if (userExists) {
-      res.status(400).json({ message: `User with this email already exists` })
-      return
+    res.status(400).json({ message: `User with this email already exists` })
+    return
   }
 
   const salt = await bcrypt.genSalt(10)
   const hashedPass = await bcrypt.hash(password, salt)
 
   const newUser = await User.create({
-      name_first,
-      name_last,
-      email,
-      role: role,
-      password: hashedPass,
-      address,
-      balance: 0,
-      status: 'approved'
-    })
-
-
+    name_first,
+    name_last,
+    email,
+    role: role,
+    password: hashedPass,
+    address,
+    balance: 0,
+    status: "approved",
+  })
 
   if (newUser) {
-      await Log.create({
-        created_by: req.user._id,
-        reference_user: newUser._id,
-        user_address: address,
-        user_email: email,
-        text: `Admin (${req.user.name_first} ${req.user.name_last}) manually added a new ${role} ${newUser.name_first} ${newUser.name_last} (${newUser.email}) with address ${newUser.address}. Balance: ${0}`,
-        type: 'registration'
-      })
+    await Log.create({
+      created_by: req.user._id,
+      reference_user: newUser._id,
+      user_address: address,
+      user_email: email,
+      text: `Admin (${req.user.name_first} ${
+        req.user.name_last
+      }) manually added a new ${role} ${newUser.name_first} ${
+        newUser.name_last
+      } (${newUser.email}) with address ${newUser.address}. Balance: ${0}`,
+      type: "registration",
+    })
 
-      if (role == 'user') {
-        client.send({
-          from: sender,
-          to: [{ email: newUser.email }],
-          subject: `KortGo registration`,
-          text: `
+    if (role == "user") {
+      client.send({
+        from: sender,
+        to: [{ email: newUser.email }],
+        subject: `KortGo registration`,
+        text: `
               Hi ${newUser.name_first}, 
               
               Welcome to KortGo!
@@ -351,46 +375,45 @@ const addUser = asyncHandler(async (req,res) => {
   
               This is an auto-generated email.
               `,
-        })
-      }
+      })
+    }
 
-      
-      
-      res.status(200).json({ message: "User created successfully", id: newUser._id })        
-      
+    res
+      .status(200)
+      .json({ message: "User created successfully", id: newUser._id })
   } else {
-      res.status(400).json({ message: "Failed to add user, please retry." })
+    res.status(400).json({ message: "Failed to add user, please retry." })
   }
 })
 
-
 const fetchLogs = asyncHandler(async (req, res) => {
-    console.log(req.params)
-    const localTime = await axios
+  console.log(req.params)
+  const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
     .then((response) => {
       //console.log(response.data)
       return response.data
-
     })
 
-  const requestTime = new Date(Date.UTC(
-    localTime.year,
-    localTime.month-1,
-    localTime.day,
-    localTime.hour,
-    localTime.minute
-  ))
+  const requestTime = new Date(
+    Date.UTC(
+      localTime.year,
+      localTime.month - 1,
+      localTime.day,
+      localTime.hour,
+      localTime.minute
+    )
+  )
   //console.log(requestTime)
   requestTime.setDate(requestTime.getDate() - Number(req.params.duration))
   //console.log(requestTime)
-  const fetchedLogs = await Log.find({type: req.params.type, createdAt: {$gt: requestTime}}).sort({createdAt: 'descending'})
+  const fetchedLogs = await Log.find({
+    type: req.params.type,
+    createdAt: { $gt: requestTime },
+  }).sort({ createdAt: "descending" })
   console.log(fetchedLogs)
-  res.status(200).json({logs: fetchedLogs})
+  res.status(200).json({ logs: fetchedLogs })
 })
-
-
-
 
 module.exports = {
   addUser,
