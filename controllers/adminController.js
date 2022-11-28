@@ -406,6 +406,18 @@ const fetchLogs = asyncHandler(async (req, res) => {
   )
   //console.log(requestTime)
   requestTime.setDate(requestTime.getDate() - Number(req.params.duration))
+
+  
+
+  if (req.params.type == 'all'){
+    const allLogs = await Log.find({
+      createdAt: { $gt: requestTime },
+    }).sort({ createdAt: "descending" })
+    res.status(200).json({ logs: allLogs })
+    return
+  }
+
+
   //console.log(requestTime)
   const fetchedLogs = await Log.find({
     type: req.params.type,
