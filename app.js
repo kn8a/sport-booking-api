@@ -11,6 +11,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require("./routes/users")
 var bookingsRouter = require("./routes/bookings")
 var adminRouter = require("./routes/admin")
+var guardRouter = require("./routes/guard")
 
 connectDb()
 
@@ -31,6 +32,7 @@ app.use('/', indexRouter);
 app.use("/api/users", usersRouter)
 app.use("/api/bookings/", bookingsRouter)
 app.use("/api/admin/", adminRouter)
+app.use("/api/guard/", guardRouter)
 
 app.use("/api/users/register", usersRouter)
 // catch 404 and forward to error handler

@@ -12,9 +12,10 @@ const sender = {
   name: "Tennis Admin",
   email: process.env.MAILTRAP_SENDER_EMAIL,
 }
-
 const randomString = require("random-string")
 
+
+//*Generate Invite Code
 const generateCode = asyncHandler(async (req, res) => {
   //validate address format
   function useRegex(input) {
@@ -51,10 +52,12 @@ const generateCode = asyncHandler(async (req, res) => {
   }
 })
 
+//* confirm admin
 const confirmAdmin = asyncHandler(async (req, res) => {
   res.status(200).json({ admin: true })
 })
 
+//* Look up users for top-up
 const lookupUsersTopUp = asyncHandler(async (req, res) => {
   const users = await User.find({ status: "approved", role: "user" }).select({
     address: 1,
@@ -67,6 +70,7 @@ const lookupUsersTopUp = asyncHandler(async (req, res) => {
   res.status(200).json({ users: users })
 })
 
+//* Look up users to manage
 const lookupUsersManage = asyncHandler(async (req, res) => {
   const users = await User.find().select({
     password: 0,
@@ -75,27 +79,33 @@ const lookupUsersManage = asyncHandler(async (req, res) => {
   res.status(200).json({ users: users })
 })
 
+//* Top-up
 const TopUp = asyncHandler(async (req, res) => {
   const { userId, amount, receipt } = req.body
-  console.log(userId, amount, receipt)
+  //console.log(userId, amount, receipt)
+
   if (!userId) {
     res.status(400).json({ message: "Please select a user and try again" })
     return
   }
+
   if (!amount || Number(amount) % 50 != 0) {
     res.status(400).json({ message: "Please enter valid amount and try again" })
     return
   }
+
   if (!receipt) {
     res.status(400).json({ message: "Please enter a receipt number" })
     return
   }
 
   const user = await User.findById(userId)
+  
   if (!user) {
     res.status(400).json({ message: "This user does not exist" })
     return
   }
+
   const newBal = user.balance + Number(amount)
   const updatedUser = await user.update({ balance: newBal })
   const log = await Log.create({
@@ -126,6 +136,7 @@ const TopUp = asyncHandler(async (req, res) => {
   })
 })
 
+//* Get past bookings (30 days)
 const getPastBooking = asyncHandler(async (req, res) => {
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
@@ -143,8 +154,8 @@ const getPastBooking = asyncHandler(async (req, res) => {
     )
   )
 
-  console.log(localTime)
-  console.log(requestTime)
+  //console.log(localTime)
+  //console.log(requestTime)
 
   const unixDateCur = Math.floor(requestTime.getTime() / 1000)
   requestTime.setDate(requestTime.getDate() - 30)
@@ -165,6 +176,7 @@ const getPastBooking = asyncHandler(async (req, res) => {
   res.status(200).json({ bookings: pastBookings })
 })
 
+//* Get future bookings
 const getFutureBooking = asyncHandler(async (req, res) => {
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
@@ -196,6 +208,7 @@ const getFutureBooking = asyncHandler(async (req, res) => {
   res.status(200).json({ bookings: futureBookings })
 })
 
+//* Cancel past or future booking
 const cancelBooking = asyncHandler(async (req, res) => {
   const booking = await Booking.findById(req.body._id)
   if (booking.status == "cancelled") {
@@ -249,8 +262,9 @@ const cancelBooking = asyncHandler(async (req, res) => {
   })
 })
 
+//* Update user profile
 const userUpdate = asyncHandler(async (req, res) => {
-  console.log(req.body)
+  //console.log(req.body)
 
   const note = req.body.note
   const id = req.body.id
@@ -289,8 +303,9 @@ const userUpdate = asyncHandler(async (req, res) => {
   //console.log(user)
 })
 
+//* Manually add a user
 const addUser = asyncHandler(async (req, res) => {
-  console.log(req.body)
+  //console.log(req.body)
   const {
     name_first,
     name_last,
@@ -386,6 +401,7 @@ const addUser = asyncHandler(async (req, res) => {
   }
 })
 
+//* Get logs
 const fetchLogs = asyncHandler(async (req, res) => {
   console.log(req.params)
   const localTime = await axios
@@ -407,9 +423,7 @@ const fetchLogs = asyncHandler(async (req, res) => {
   //console.log(requestTime)
   requestTime.setDate(requestTime.getDate() - Number(req.params.duration))
 
-  
-
-  if (req.params.type == 'all'){
+  if (req.params.type == "all") {
     const allLogs = await Log.find({
       createdAt: { $gt: requestTime },
     }).sort({ createdAt: "descending" })
@@ -417,13 +431,12 @@ const fetchLogs = asyncHandler(async (req, res) => {
     return
   }
 
-
   //console.log(requestTime)
   const fetchedLogs = await Log.find({
     type: req.params.type,
     createdAt: { $gt: requestTime },
   }).sort({ createdAt: "descending" })
-  console.log(fetchedLogs)
+  //console.log(fetchedLogs)
   res.status(200).json({ logs: fetchedLogs })
 })
 
