@@ -19,6 +19,6 @@ const { confirmBooking, confirmGuard, getBookings} = require('../controllers/gua
 // router.get('/logs/:type/:duration', protect, isAdmin, fetchLogs)
 router.get('/bookings', protect, isGuard, getBookings)
 router.put('/confirm', protect, isGuard, confirmBooking )
-router.put('/check', protect, isGuard, confirmGuard )
+router.get('/check', protect, isGuard, confirmGuard )
 
 module.exports = router;

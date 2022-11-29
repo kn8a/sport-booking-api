@@ -21,13 +21,59 @@ const confirmGuard = asyncHandler(async (req, res) => {
 
 //* get today's bookings
 const getBookings = asyncHandler(async (req, res) => {
-    res.status(200).json({ guard: true })
+    console.log('guard get bookings')
+    
+    const localTime = await axios
+    .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
+    .then((response) => {
+      return response.data
+    })
+
+    const bookings = await Booking.find({year: localTime.year, month: localTime.month, day: localTime.day, status:'confirmed'})
+    .populate({
+        path: "user",
+        select: { name_first: 1, name_last: 1, address: 1 },
+      }).sort({date: 1})
+    res.status(200).json({ bookings: bookings })
   })
 
 //* confirm a booking
 const confirmBooking = asyncHandler(async (req, res) => {
+    console.log(req.body)
+    const booking = await Booking.findById(req.body.id).populate('user')
+    console.log(booking)
+    const updateBooking = await booking.update({status: 'completed'})
+    const newLog = await Log.create({
+        created_by: req.user._id,
+        reference_user: booking.user._id,
+        user_address: booking.user.address,
+        user_email: booking.user.email,
+        type: "check-in",
+        text: `Guard (${req.user.name_first} ${
+          req.user.name_last
+        }) checked-in ${req.user.name_first} ${req.user.name_last} (${req.user.address}) for booking`,
+      })
+      client.send({
+        from: sender,
+        to: [{ email: booking.user.email }],
+        subject: `Tennis booking check-in`,
+        text: `
+            Hi ${booking.user.name_first}, 
+            
+            You have checked-in for your booking of time slots ${booking.slots_full.map((slot) => {
+              return slot.time
+            })} (${booking.slots.length / 2} hour/s) on ${booking.day}/${
+          booking.month
+        }/${booking.year}.
+            
+            Confirmation #: ${newLog._id.toString()}
+    
+            This is an auto-generated email.
+            `,
+      })
     res.status(200).json({ guard: true })
   })
+  
 
 
 

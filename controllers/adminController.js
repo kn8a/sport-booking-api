@@ -162,7 +162,7 @@ const getPastBooking = asyncHandler(async (req, res) => {
   const unixDatePast = Math.floor(requestTime.getTime() / 1000)
 
   const pastBookings = await Booking.find({
-    status: "confirmed",
+    status: {$in: ["confirmed", 'completed']},
     $and: [
       { date: { $gt: unixDatePast }, status: "confirmed" },
       { date: { $lt: unixDateCur } },
@@ -197,7 +197,7 @@ const getFutureBooking = asyncHandler(async (req, res) => {
   console.log(requestTime)
 
   const futureBookings = await Booking.find({
-    status: "confirmed",
+    status: {$in: ["confirmed", 'completed']},
     date: { $gt: unixDateCur },
   })
     .populate({
@@ -286,7 +286,7 @@ const userUpdate = asyncHandler(async (req, res) => {
   })
   await user.update({ $push: { notes: note } })
 
-  const newLog = Log.create({
+  const newLog = await Log.create({
     created_by: req.user._id,
     reference_user: user._id,
     user_address: user.address,
