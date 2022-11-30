@@ -66,7 +66,7 @@ const lookupUsersTopUp = asyncHandler(async (req, res) => {
     email: 1,
     balance: 1,
     status: 1,
-  })
+  }).sort({address:1})
   res.status(200).json({ users: users })
 })
 
@@ -109,6 +109,8 @@ const TopUp = asyncHandler(async (req, res) => {
   const newBal = user.balance + Number(amount)
   const updatedUser = await user.update({ balance: newBal })
   const log = await Log.create({
+    created_by: req.user._id,
+    reference_user: user._id,
     user_address: user.address,
     user_email: user.email,
     type: "topup",
@@ -155,16 +157,17 @@ const getPastBooking = asyncHandler(async (req, res) => {
   )
 
   //console.log(localTime)
-  //console.log(requestTime)
+  console.log(requestTime)
 
   const unixDateCur = Math.floor(requestTime.getTime() / 1000)
   requestTime.setDate(requestTime.getDate() - 30)
+  console.log(requestTime)
   const unixDatePast = Math.floor(requestTime.getTime() / 1000)
 
   const pastBookings = await Booking.find({
     status: {$in: ["confirmed", 'completed']},
     $and: [
-      { date: { $gt: unixDatePast }, status: "confirmed" },
+      { date: { $gt: unixDatePast } },
       { date: { $lt: unixDateCur } },
     ],
   })
@@ -194,7 +197,7 @@ const getFutureBooking = asyncHandler(async (req, res) => {
     )
   )
   const unixDateCur = Math.floor(requestTime.getTime() / 1000)
-  console.log(requestTime)
+  //console.log(requestTime)
 
   const futureBookings = await Booking.find({
     status: {$in: ["confirmed", 'completed']},
@@ -210,6 +213,7 @@ const getFutureBooking = asyncHandler(async (req, res) => {
 
 //* Cancel past or future booking
 const cancelBooking = asyncHandler(async (req, res) => {
+  console.log(req.body)
   const booking = await Booking.findById(req.body._id)
   if (booking.status == "cancelled") {
     res.json(400).json({
@@ -219,11 +223,13 @@ const cancelBooking = asyncHandler(async (req, res) => {
     return
   }
   const user = await User.findById(req.body.user._id)
-  console.log(booking)
+  //console.log(booking)
   const newBal = user.balance + booking.amount
   const bookingupdate = await booking.update({ status: "cancelled" })
   const userUpdate = await user.update({ balance: newBal })
   const newLog = await Log.create({
+    created_by: req.user._id,
+    reference_user: user._id,
     user_address: user.address,
     user_email: req.user.email,
     type: "refund",
@@ -233,9 +239,9 @@ const cancelBooking = asyncHandler(async (req, res) => {
       booking.amount
     }. For address: ${user.address} (${
       user.name_first
-    }). User's balance is now: ${user.balance + booking.amount}`,
+    }). User's balance is now: ${user.balance + booking.amount}. Reason: ${req.body.reason}`,
   })
-  console.log(newLog)
+  //console.log(newLog)
   client.send({
     from: sender,
     to: [{ email: user.email }],
@@ -247,7 +253,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
           return slot.time
         })} (${booking.slots.length / 2} hour/s) on ${booking.day}/${
       booking.month
-    }/${booking.year}, has been cancelled by admin (${req.user.name_first}).
+    }/${booking.year}, has been cancelled by admin (${req.user.name_first}). Reason: ${req.body.reason}.
         
         Confirmation #: ${newLog._id.toString()}
         Refund amount: ${booking.amount}

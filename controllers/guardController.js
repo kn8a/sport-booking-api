@@ -51,7 +51,9 @@ const confirmBooking = asyncHandler(async (req, res) => {
         type: "check-in",
         text: `Guard (${req.user.name_first} ${
           req.user.name_last
-        }) checked-in ${req.user.name_first} ${req.user.name_last} (${req.user.address}) for booking`,
+        }) checked-in ${booking.user.name_first} ${booking.user.name_last} (${booking.user.address}) for booking on ${booking.day}/${booking.month}/${booking.year} with time slots: ${booking.slots_full.map((slot) => {
+            return slot.time
+          })}`,
       })
       client.send({
         from: sender,
