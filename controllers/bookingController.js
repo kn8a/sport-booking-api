@@ -12,11 +12,9 @@ const sender = {
 }
 
 function buildTimes(bookedSlots, localTime, date) {
-  // console.log(date)
   let slots = []
   let hour = 7
   for (let i = 7; i < 22; i++) {
-    //console.log(i, hour)
 
     let booked = false
     if (
@@ -70,10 +68,6 @@ function dateSlicer(date) {
 }
 
 function futureDateChecker(reqDate, localTime) {
-  // let currentDate = new Date();
-  // let cDay = currentDate.getDate();
-  // let cMonth = currentDate.getMonth() + 1;
-  // let cYear = currentDate.getFullYear();
   if (
     (localTime.year == reqDate.year &&
       localTime.month == reqDate.month &&
@@ -85,86 +79,60 @@ function futureDateChecker(reqDate, localTime) {
   }
 }
 
-function getBkkTime() {
-  axios.get(
-    "https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok"
-  )
-}
-
 //*check availability
 const checkAvailability = asyncHandler(async (req, res) => {
-  //getBkkTime()
-
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
     .then((response) => {
       return response.data
     })
 
-  //console.log(localTime)
-
-  // const timeData = await fetch('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok')
-  // const bkkDate = await timeData.json
-  // console.log(bkkDate)
-
   const date = dateSlicer(req.params.date)
 
-  // const bookDate = new Date(req.params.date)
-  // console.log(bookDate)
-  // const unixDate = Math.floor(bookDate.getTime()/1000)
-  // console.log(unixDate)
-
   if (futureDateChecker(date, localTime)) {
-    res
-      .status(400)
-      .json({
-        message: "You cannot book in the past. Please select a future date",
-      })
+    res.status(400).json({
+      message: "You cannot book in the past. Please select a future date",
+    })
     return
   }
 
-  //*get booking for date - add Select only slots
+  //* get booking for date - add Select only slots
   const existingBookings = await Booking.find({
     year: date.year,
     month: date.month,
     day: date.day,
     status: { $not: { $eq: "cancelled" } },
   }).select({ slots: 1 })
-  //console.log(existingBookings)
+
   let bookedSlots = []
   if (existingBookings) {
     for (let i = 0; i < existingBookings.length; i++) {
       bookedSlots.push(...existingBookings[i].slots)
     }
   }
-  //console.log(bookedSlots)
 
   const times = buildTimes(bookedSlots, localTime, date)
-  //console.log(times)
+
   res.status(200).json({ times: times })
 })
 
-//*New booking
+//* New booking
 const newBooking = asyncHandler(async (req, res) => {
   //check for minimum 2 slots
   if (req.body.slots.length < 2) {
-    res
-      .status(400)
-      .json({
-        message: "Please select at least 2 consecutive slots and retry.",
-      })
+    res.status(400).json({
+      message: "Please select at least 2 consecutive slots and retry.",
+    })
     return
   }
 
   //check whether slots are consecutive
   for (let i = 1; i < req.body.slots.length; i++) {
     if (req.body.slots[i].value - req.body.slots[i - 1].value != 0.5) {
-      res
-        .status(400)
-        .json({
-          message:
-            "A booking must have consecutive time slots. If you need to book non consecutive times, you may do so in a separate booking",
-        })
+      res.status(400).json({
+        message:
+          "A booking must have consecutive time slots. If you need to book non consecutive times, you may do so in a separate booking",
+      })
       return
     }
   }
@@ -175,16 +143,12 @@ const newBooking = asyncHandler(async (req, res) => {
       return response.data
     })
 
-  //console.log(localTime)
-
   const date = dateSlicer(req.body.date)
   //console.log(date)
   if (futureDateChecker(date, localTime)) {
-    res
-      .status(400)
-      .json({
-        message: "You cannot book in the past. Please select a future date",
-      })
+    res.status(400).json({
+      message: "You cannot book in the past. Please select a future date",
+    })
     return
   }
 
@@ -195,7 +159,7 @@ const newBooking = asyncHandler(async (req, res) => {
     day: date.day,
     status: { $not: { $eq: "cancelled" } },
   }).select({ slots: 1 })
-  //console.log(existingBookings)
+
   let bookedSlots = []
   if (existingBookings) {
     for (let i = 0; i < existingBookings.length; i++) {
@@ -206,14 +170,13 @@ const newBooking = asyncHandler(async (req, res) => {
   //calculate price for the booking
   let total = 0
   for (let i = 0; i < req.body.slots.length; i++) {
-    //console.log(bookedSlots.indexOf(req.body.slots[i].value))
     if (bookedSlots.indexOf(req.body.slots[i].value) != -1) {
       res.status(400).json({
         message: `One of more of the time slots you are trying to book has already been booked. 
                 Please retry with a different time.`,
       })
       total = 0
-      //console.log("already booked")
+
       return
     } else if (req.body.slots[i].value < 18) {
       total = total + 50
@@ -224,7 +187,7 @@ const newBooking = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user._id)
   const newBalance = user.balance - total
-  //console.log(user.balance, total)
+
   if (total > user.balance) {
     res
       .status(400)
@@ -233,7 +196,7 @@ const newBooking = asyncHandler(async (req, res) => {
   }
 
   //^date contructor
-  //console.log(typeof(req.body.slots[0].value))
+
   let hour = 0
   let minute = 0
   if (Math.trunc(req.body.slots[0].value) < req.body.slots[0].value) {
@@ -244,18 +207,19 @@ const newBooking = asyncHandler(async (req, res) => {
     minute = 0
   }
 
-  const bookDate = new Date(Date.UTC(date.year, date.month-1, date.day, hour, minute))
-  console.log(bookDate, 'book date')
-  //console.log(bookDate)
+  const bookDate = new Date(
+    Date.UTC(date.year, date.month - 1, date.day, hour, minute)
+  )
+
   const unixDate = Math.floor(bookDate.getTime() / 1000)
-  //console.log(unixDate)
 
   const userBalanceUpdate = await user.update({ balance: user.balance - total })
-  //console.log(userBalanceUpdate)
+
   if (!userBalanceUpdate) {
     res.status(400).json({ message: "Database error. Please notify admin." })
     return
   }
+
   //create booking entry
   const newBooking = await Booking.create({
     user: req.user._id,
@@ -268,9 +232,9 @@ const newBooking = asyncHandler(async (req, res) => {
     }),
     slots_full: req.body.slots,
     status: "confirmed",
-    //20221027.5
     date: unixDate,
   })
+
   //log the booking
   const newLog = await Log.create({
     created_by: req.user._id,
@@ -283,6 +247,7 @@ const newBooking = asyncHandler(async (req, res) => {
       user.balance - total
     }`,
   })
+
   //send confirmation email
   client.send({
     from: sender,
@@ -291,7 +256,11 @@ const newBooking = asyncHandler(async (req, res) => {
     text: `
         Hi ${req.user.name_first}, 
         
-        Your booking of time slots ${req.body.slots.map((slot) => {return slot.time})} (${req.body.slots.length / 2} hour/s) on ${date.day}/${date.month}/${date.year} is confirmed.
+        Your booking of time slots ${req.body.slots.map((slot) => {
+          return slot.time
+        })} (${req.body.slots.length / 2} hour/s) on ${date.day}/${
+      date.month
+    }/${date.year} is confirmed.
         
         Confirmation #: ${newBooking._id.toString()}
         Total amount charged: ${newBooking.amount}
@@ -308,22 +277,22 @@ const newBooking = asyncHandler(async (req, res) => {
 
 //*Get my booking
 const getUpcomingBookings = asyncHandler(async (req, res) => {
-  
   const localTime = await axios
     .get("https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Bangkok")
     .then((response) => {
       return response.data
     })
 
-  const requestTime = new Date(Date.UTC(
-    localTime.year,
-    localTime.month-1,
-    localTime.day,
-    localTime.hour,
-    localTime.minute
-  ))
+  const requestTime = new Date(
+    Date.UTC(
+      localTime.year,
+      localTime.month - 1,
+      localTime.day,
+      localTime.hour,
+      localTime.minute
+    )
+  )
 
-  console.log(requestTime, 'request time')
   const unixDate = Math.floor(requestTime.getTime() / 1000)
 
   const upcoming = await Booking.find({
@@ -336,15 +305,16 @@ const getUpcomingBookings = asyncHandler(async (req, res) => {
 })
 
 const cancelBooking = asyncHandler(async (req, res) => {
-  //console.log(req.body)
 
   //get booking
   const booking = await Booking.findById(req.body._id)
+
   //check if booking is valid
   if (!booking) {
     res.status(400).json({ message: "No such booking in the database" })
     return
   }
+
   //check if user is owner of booking
   if (booking.user.toString() != req.user._id.toString()) {
     res
@@ -352,13 +322,12 @@ const cancelBooking = asyncHandler(async (req, res) => {
       .json({ message: "You are not authorized to cancel this booking" })
     return
   }
+
   //check that the booking is confirmed status
   if (booking.status != "confirmed") {
-    res
-      .status(400)
-      .json({
-        message: `The booking is in ${booking.status} status, and cannot be cancelled.`,
-      })
+    res.status(400).json({
+      message: `The booking is in ${booking.status} status, and cannot be cancelled.`,
+    })
     return
   }
 
@@ -369,15 +338,16 @@ const cancelBooking = asyncHandler(async (req, res) => {
     })
 
   //check that booking is not in the past
-  const requestTime = new Date(Date.UTC(
-    localTime.year,
-    localTime.month-1,
-    localTime.day,
-    localTime.hour,
-    localTime.minute
-  ))
+  const requestTime = new Date(
+    Date.UTC(
+      localTime.year,
+      localTime.month - 1,
+      localTime.day,
+      localTime.hour,
+      localTime.minute
+    )
+  )
 
-  console.log(requestTime, 'request time')
   const requestUnixDate = Math.floor(requestTime.getTime() / 1000)
 
   let hour = 0
@@ -389,24 +359,17 @@ const cancelBooking = asyncHandler(async (req, res) => {
     hour = booking.slots[0]
     minute = 0
   }
-  const bookingTime = new Date(Date.UTC(
-    booking.year,
-    booking.month-1,
-    booking.day,
-    hour,
-    minute
-  ))
 
-  console.log(bookingTime, 'booking time')
+  const bookingTime = new Date(
+    Date.UTC(booking.year, booking.month - 1, booking.day, hour, minute)
+  )
 
   const bookingUnixTime = Math.floor(bookingTime.getTime() / 1000)
 
   if (bookingUnixTime < requestUnixDate) {
-    res
-      .status(400)
-      .json({
-        message: `Cannot cancel a past booking or a booking that already started`,
-      })
+    res.status(400).json({
+      message: `Cannot cancel a past booking or a booking that already started`,
+    })
     return
   }
 
@@ -418,15 +381,19 @@ const cancelBooking = asyncHandler(async (req, res) => {
   const updatedUser = await user.update({
     balance: user.balance + booking.amount,
   })
-  //console.log(updatedUser)
 
+  //log cancellation
   const newLog = await Log.create({
     created_by: req.user._id,
     reference_user: req.user._id,
     user_address: user.address,
     user_email: user.email,
     type: "refund",
-    text: `${user.name_first} at ${user.address} cancelled ${booking.slots.length / 2} hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${booking.amount}. User's balance is now: ${user.balance + booking.amount}`,
+    text: `${user.name_first} at ${user.address} cancelled ${
+      booking.slots.length / 2
+    } hour/s, on ${booking.day}/${booking.month}/${booking.year}, totalling ${
+      booking.amount
+    }. User's balance is now: ${user.balance + booking.amount}`,
   })
 
   //send confirmation email
@@ -437,7 +404,11 @@ const cancelBooking = asyncHandler(async (req, res) => {
     text: `
         Hi ${user.name_first}, 
         
-        Your booking of time slots ${booking.slots_full.map((slot) => {return slot.time})} (${booking.slots.length / 2} hour/s) on ${booking.day}/${booking.month}/${booking.year} is cancelled.
+        Your booking of time slots ${booking.slots_full.map((slot) => {
+          return slot.time
+        })} (${booking.slots.length / 2} hour/s) on ${booking.day}/${
+      booking.month
+    }/${booking.year} is cancelled.
         
         Confirmation #: ${newLog._id.toString()}
         Refund amount: ${booking.amount}
@@ -449,8 +420,8 @@ const cancelBooking = asyncHandler(async (req, res) => {
 
   //return confirmation with amount of credit and new user balance.
   res.status(200).json({
-      message: `Booking cancelled. You have been credited ${booking.amount}.`,
-    })
+    message: `Booking cancelled. You have been credited ${booking.amount}.`,
+  })
 })
 
 module.exports = {
@@ -459,4 +430,3 @@ module.exports = {
   getUpcomingBookings,
   cancelBooking,
 }
-
