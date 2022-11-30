@@ -195,7 +195,7 @@ const newBooking = asyncHandler(async (req, res) => {
     return
   }
 
-  //^date contructor
+  //^date constructor
 
   let hour = 0
   let minute = 0
