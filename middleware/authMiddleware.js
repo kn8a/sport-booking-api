@@ -1,8 +1,12 @@
 const asyncHandler = require("express-async-handler")
 const jwt = require("jsonwebtoken")
 const user = require("../models/userModel")
+const sanitize = require("mongo-sanitize");
 
 const protect = asyncHandler(async (req, res, next) => {
+  
+  
+
   let token
 
   if (
@@ -18,7 +22,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
       //get user from token                     exclude password field
       req.user = await user.findById(decoded.id).select("-password")
-
+      req.body = sanitize(req.body)
       next()
     } catch (error) {
       //console.log(error)
