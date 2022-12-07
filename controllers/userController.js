@@ -3,7 +3,7 @@ const asyncHandler = require("express-async-handler")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const sanitize = require("mongo-sanitize");
-const sanitizeHtml = require('sanitize-html');
+
 //const { use } = require("../routes/users")
 
 const Invite = require("../models/inviteModel")
@@ -24,7 +24,7 @@ const genToken = (id) => {
 //*create user with balance 0 and status approved
 const userRegister = asyncHandler(async (req, res) => {
   req.body = sanitize(req.body)
-  req.body = sanitizeHtml(req.body)
+
   const {
     name_first,
     name_last,
