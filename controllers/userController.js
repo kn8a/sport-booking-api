@@ -199,9 +199,15 @@ const getBalance = asyncHandler(async (req, res) => {
   res.status(200).json({ balance: userBal })
 })
 
+const checkRole = asyncHandler(async (req, res) => {
+  const userRole = req.user.role
+  res.status(200).json({ role: userRole })
+})
+
 module.exports = {
   userRegister,
   getBalance,
   userLogin,
   userUpdate,
+  checkRole
 }

@@ -76,7 +76,7 @@ const lookupUsersManage = asyncHandler(async (req, res) => {
   const users = await User.find().select({
     password: 0,
     notes: 0,
-  })
+  }).sort({address:1})
   res.status(200).json({ users: users })
 })
 
